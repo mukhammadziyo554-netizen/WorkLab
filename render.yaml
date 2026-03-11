@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: worklab-backend
+    env: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: python -m uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: APP_PUBLIC_URL
+        sync: false
+      - key: WORKLAB_WEBAPP_URL
+        sync: false
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+      - key: BACKEND_WEBHOOK_URL
+        sync: false
+      - key: TELEGRAM_AUTH_MAX_AGE_SEC
+        value: "86400"
+      - key: WORKLAB_DB_PATH
+        value: "/var/data/worklab.db"
+
+disks:
+  - name: worklab-db
+    mountPath: /var/data
+    sizeGB: 1

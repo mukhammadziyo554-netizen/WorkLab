@@ -62,6 +62,56 @@ Bot behavior:
 - Frontend communicates with backend through HTTP APIs.
 - Backend handles Telegram communication, AI processing, and database persistence.
 
+## Deployment (GitHub -> Vercel + Backend)
+
+### 1) Push to GitHub
+
+If this is your first push from this project root:
+
+```bash
+cd /Users/muhammadziyo/WorkLab
+gh auth login
+gh repo create WorkLab --private --source=. --remote=origin --push
+```
+
+If the GitHub repo already exists:
+
+```bash
+cd /Users/muhammadziyo/WorkLab
+git remote add origin https://github.com/<your-username>/WorkLab.git
+git push -u origin main
+```
+
+### 2) Deploy Frontend on Vercel
+
+- Import the GitHub repository in Vercel.
+- Set Root Directory to `frontend`.
+- Framework preset: Next.js (auto-detected).
+- Build command: `npm run build`.
+- Install command: `npm install`.
+- Add environment variable:
+	- `NEXT_PUBLIC_BACKEND_URL=https://<your-backend-domain>`
+
+### 3) Deploy Backend (Render Blueprint Included)
+
+This repository includes `render.yaml` for backend deployment.
+
+- In Render, create a new Blueprint instance from this repo.
+- Service root uses `backend` and starts FastAPI with Uvicorn.
+- Health check path is `/health`.
+- Persistent disk is mounted at `/var/data`.
+- Set required environment variables in Render:
+	- `TELEGRAM_BOT_TOKEN`
+	- `APP_PUBLIC_URL=https://<your-backend-domain>`
+	- `WORKLAB_WEBAPP_URL=https://<your-vercel-domain>`
+	- `CORS_ALLOWED_ORIGINS=https://<your-vercel-domain>`
+	- `BACKEND_WEBHOOK_URL=https://<your-backend-domain>/telegram/webhook`
+
+### 4) Database Persistence
+
+- Backend now supports configurable DB location via `WORKLAB_DB_PATH`.
+- In Render blueprint this is set to `/var/data/worklab.db`, so SQLite data survives deploys/restarts.
+
 ## Telegram Mini App Connection (Bot + Web in Separate Projects)
 
 Use URL-based integration only. No shared files are required between projects.

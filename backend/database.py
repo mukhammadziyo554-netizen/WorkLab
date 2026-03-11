@@ -1,9 +1,11 @@
+import os
 import sqlite3
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Generator
 
-DB_PATH = Path(__file__).resolve().parent / "worklab.db"
+_DEFAULT_DB_PATH = Path(__file__).resolve().parent / "worklab.db"
+DB_PATH = Path(os.getenv("WORKLAB_DB_PATH", str(_DEFAULT_DB_PATH))).expanduser().resolve()
 
 
 def _ensure_column(conn: sqlite3.Connection, table: str, column: str, sql_type: str) -> None:
