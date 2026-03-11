@@ -1,0 +1,107 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-[#05070f] text-white antialiased;
+  }
+}
+
+@layer utilities {
+	.animate-fade-in {
+		animation: fade-in 500ms ease-out both;
+	}
+
+	.reveal-up {
+		animation: reveal-up 650ms ease-out both;
+	}
+
+	.stagger-1 {
+		animation-delay: 100ms;
+	}
+
+	.stagger-2 {
+		animation-delay: 200ms;
+	}
+
+	.stagger-3 {
+		animation-delay: 300ms;
+	}
+
+	.stagger-4 {
+		animation-delay: 400ms;
+	}
+
+	.glow-drift-cyan {
+		animation: glow-drift-cyan 14s ease-in-out infinite alternate;
+	}
+
+	.glow-drift-purple {
+		animation: glow-drift-purple 16s ease-in-out infinite alternate;
+	}
+
+	.button-pop {
+		transition: transform 180ms ease, box-shadow 180ms ease;
+	}
+
+	.button-pop:hover {
+		transform: translateY(-1px);
+		box-shadow: 0 10px 24px rgba(34, 211, 238, 0.25);
+	}
+
+	.button-pop:active {
+		transform: translateY(0);
+	}
+}
+
+@keyframes fade-in {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+@keyframes reveal-up {
+	from {
+		opacity: 0;
+		transform: translateY(14px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@keyframes glow-drift-cyan {
+	from {
+		transform: translate3d(-6px, -4px, 0) scale(0.98);
+	}
+	to {
+		transform: translate3d(10px, 8px, 0) scale(1.04);
+	}
+}
+
+@keyframes glow-drift-purple {
+	from {
+		transform: translate3d(8px, -6px, 0) scale(0.99);
+	}
+	to {
+		transform: translate3d(-10px, 10px, 0) scale(1.05);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.animate-fade-in,
+	.reveal-up,
+	.glow-drift-cyan,
+	.glow-drift-purple {
+		animation: none !important;
+	}
+
+	.button-pop {
+		transition: none;
+	}
+}
