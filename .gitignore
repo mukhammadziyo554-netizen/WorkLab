@@ -1,5 +1,6 @@
 # Node / Next
 node_modules/
+node_modules
 .next/
 out/
 frontend/.next/
@@ -39,3 +40,8 @@ yarn-error.log*
 dist/
 build/
 coverage/
+
+# Workspace root symlink helpers
+src
+next-env.d.ts
+tsconfig.json
