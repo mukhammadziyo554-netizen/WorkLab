@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Sidebar from "../../components/ui/Sidebar";
+import MobileTelegramNav from "../../components/ui/MobileTelegramNav";
 import { getApiHeaders, getBackendBaseUrl } from "../../lib/backend";
 import { fetchBillingStatus } from "../../lib/billing";
 
@@ -64,7 +65,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   return (
     <div className="min-h-screen bg-[#05070f] text-slate-100 md:flex">
-      <Sidebar />
+      <div className="hidden md:block">
+        <Sidebar />
+      </div>
+      <div className="md:hidden">
+        <MobileTelegramNav />
+      </div>
       <main className="flex-1 p-6 sm:p-8 lg:p-10">
         {billingStatus && billingStatus !== "active" && !isAdmin ? (
           <div className="mb-5 rounded-xl border border-amber-300/40 bg-amber-300/10 p-4 text-sm text-amber-100">

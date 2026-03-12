@@ -42,6 +42,6 @@ build/
 coverage/
 
 # Workspace root symlink helpers
-src
-next-env.d.ts
-tsconfig.json
+/src
+/next-env.d.ts
+/tsconfig.json
