@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import LanguageSwitcher from "./LanguageSwitcher";
+import { useLanguage } from "../providers/LanguageProvider";
 import { getApiHeaders, getBackendBaseUrl } from "../../lib/backend";
 
 type MobileNavItem = {
@@ -20,6 +21,7 @@ export default function MobileTelegramPublicNav({
   isAuthenticated,
   isAdmin,
 }: MobileTelegramPublicNavProps) {
+  const { t } = useLanguage();
   const pathname = usePathname();
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
@@ -27,17 +29,17 @@ export default function MobileTelegramPublicNav({
 
   const primaryItems = useMemo<MobileNavItem[]>(
     () => [
-      { label: "Dashboard", href: "/dashboard" },
-      { label: "AI Employees", href: "/dashboard/ai-employees" },
-      { label: "Knowledge Base", href: "/dashboard/knowledge-base" },
-      { label: "Conversations", href: "/dashboard/conversations" },
-      { label: "Analytics", href: "/dashboard/analytics" },
-      { label: "Settings", href: "/dashboard/settings" },
-      { label: "Billing", href: "/dashboard/settings/billing" },
-      { label: "Pricing", href: "/pricing" },
-      { label: "Profile", href: "/dashboard/profile" },
+      { label: t.mobileNav.dashboard, href: "/dashboard" },
+      { label: t.mobileNav.aiEmployees, href: "/dashboard/ai-employees" },
+      { label: t.mobileNav.knowledgeBase, href: "/dashboard/knowledge-base" },
+      { label: t.mobileNav.conversations, href: "/dashboard/conversations" },
+      { label: t.mobileNav.analytics, href: "/dashboard/analytics" },
+      { label: t.mobileNav.settings, href: "/dashboard/settings" },
+      { label: t.mobileNav.billing, href: "/dashboard/settings/billing" },
+      { label: t.mobileNav.pricing, href: "/pricing" },
+      { label: t.mobileNav.profile, href: "/dashboard/profile" },
     ],
-    []
+    [t]
   );
 
   useEffect(() => {
@@ -100,7 +102,7 @@ export default function MobileTelegramPublicNav({
       >
         <button
           type="button"
-          aria-label={isOpen ? "Close menu" : "Open menu"}
+          aria-label={isOpen ? t.mobileNav.closeMenu : t.mobileNav.openMenu}
           aria-expanded={isOpen}
           onClick={() => setIsOpen((previous) => !previous)}
           className="relative inline-flex h-10 w-10 items-center justify-center rounded-lg border border-white/15 bg-white/5 text-slate-100 transition hover:border-cyan-300/45"
@@ -150,19 +152,19 @@ export default function MobileTelegramPublicNav({
               href="/#features"
               className="rounded-lg border border-transparent px-3 py-2.5 text-sm text-slate-200 transition hover:border-white/10 hover:bg-white/10"
             >
-              Features
+              {t.nav.features}
             </Link>
             <Link
               href="/ai"
               className="rounded-lg border border-transparent px-3 py-2.5 text-sm text-slate-200 transition hover:border-white/10 hover:bg-white/10"
             >
-              AI
+              {t.mobileNav.ai}
             </Link>
             <Link
               href="/create-employee"
               className="rounded-lg border border-transparent px-3 py-2.5 text-sm text-slate-200 transition hover:border-white/10 hover:bg-white/10"
             >
-              Create AI Employee
+              {t.nav.createAiEmployee}
             </Link>
 
             {primaryItems.map((item) => {
@@ -187,7 +189,7 @@ export default function MobileTelegramPublicNav({
                 href="/admin"
                 className="rounded-lg border border-transparent px-3 py-2.5 text-sm text-cyan-100 transition hover:border-cyan-300/35 hover:bg-cyan-300/15"
               >
-                Admin
+                {t.mobileNav.admin}
               </Link>
             ) : null}
 
@@ -198,14 +200,14 @@ export default function MobileTelegramPublicNav({
                 disabled={isLoggingOut}
                 className="mt-2 rounded-lg border border-white/10 px-3 py-2.5 text-left text-sm text-slate-200 transition hover:border-rose-300/45 hover:bg-rose-400/10 hover:text-rose-200"
               >
-                {isLoggingOut ? "Logging out..." : "Logout"}
+                {isLoggingOut ? `${t.mobileNav.logout}...` : t.mobileNav.logout}
               </button>
             ) : (
               <Link
                 href="/login"
                 className="mt-2 rounded-lg border border-white/10 px-3 py-2.5 text-sm text-slate-200 transition hover:border-white/20 hover:bg-white/10"
               >
-                Login
+                {t.nav.login}
               </Link>
             )}
           </nav>

@@ -10,6 +10,22 @@ export type AppTranslations = {
     back: string;
     toggleMenu: string;
   };
+  mobileNav: {
+    openMenu: string;
+    closeMenu: string;
+    dashboard: string;
+    aiEmployees: string;
+    knowledgeBase: string;
+    conversations: string;
+    analytics: string;
+    settings: string;
+    billing: string;
+    pricing: string;
+    profile: string;
+    logout: string;
+    admin: string;
+    ai: string;
+  };
   landing: {
     badge: string;
     heroTitle: string;
@@ -107,6 +123,22 @@ export const translations: Record<Language, AppTranslations> = {
       createAiEmployee: "Create AI Employee",
       back: "Back",
       toggleMenu: "Toggle menu",
+    },
+    mobileNav: {
+      openMenu: "Open menu",
+      closeMenu: "Close menu",
+      dashboard: "Dashboard",
+      aiEmployees: "AI Employees",
+      knowledgeBase: "Knowledge Base",
+      conversations: "Conversations",
+      analytics: "Analytics",
+      settings: "Settings",
+      billing: "Billing",
+      pricing: "Pricing",
+      profile: "Profile",
+      logout: "Logout",
+      admin: "Admin",
+      ai: "AI",
     },
     landing: {
       badge: "AI Workforce for Telegram Customer Support",
@@ -242,6 +274,22 @@ export const translations: Record<Language, AppTranslations> = {
       back: "Назад",
       toggleMenu: "Переключить меню",
     },
+    mobileNav: {
+      openMenu: "Открыть меню",
+      closeMenu: "Закрыть меню",
+      dashboard: "Панель",
+      aiEmployees: "AI сотрудники",
+      knowledgeBase: "База знаний",
+      conversations: "Диалоги",
+      analytics: "Аналитика",
+      settings: "Настройки",
+      billing: "Оплата",
+      pricing: "Тарифы",
+      profile: "Профиль",
+      logout: "Выйти",
+      admin: "Админ",
+      ai: "AI",
+    },
     landing: {
       badge: "AI команда для поддержки в Telegram",
       heroTitle: "Автоматизируйте поддержку клиентов с AI сотрудниками",
@@ -375,6 +423,22 @@ export const translations: Record<Language, AppTranslations> = {
       createAiEmployee: "AI xodim yarating",
       back: "Orqaga",
       toggleMenu: "Menyuni ochish",
+    },
+    mobileNav: {
+      openMenu: "Menyuni ochish",
+      closeMenu: "Menyuni yopish",
+      dashboard: "Boshqaruv paneli",
+      aiEmployees: "AI xodimlar",
+      knowledgeBase: "Bilimlar bazasi",
+      conversations: "Suhbatlar",
+      analytics: "Analitika",
+      settings: "Sozlamalar",
+      billing: "To'lov",
+      pricing: "Narxlar",
+      profile: "Profil",
+      logout: "Chiqish",
+      admin: "Admin",
+      ai: "AI",
     },
     landing: {
       badge: "Telegram mijozlar yordami uchun AI jamoasi",
