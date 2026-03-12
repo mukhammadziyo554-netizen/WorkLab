@@ -4,10 +4,10 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useLanguage } from "../components/providers/LanguageProvider";
 import LanguageSwitcher from "../components/ui/LanguageSwitcher";
+import MobileTelegramPublicNav from "../components/ui/MobileTelegramPublicNav";
 import { getApiHeaders, getBackendBaseUrl } from "../lib/backend";
 
 export default function HomePage() {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const { t } = useLanguage();
@@ -63,10 +63,6 @@ export default function HomePage() {
     "hover:shadow-[0_20px_58px_rgba(34,211,238,0.18)]",
   ];
 
-  const closeMobileMenu = () => {
-    setIsMobileMenuOpen(false);
-  };
-
   return (
     <main className="animate-fade-in relative min-h-screen overflow-hidden bg-[#05070f] text-white">
       <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
@@ -78,7 +74,7 @@ export default function HomePage() {
       <div className="mx-auto max-w-6xl px-6 pb-28 pt-6 sm:px-10 lg:px-12">
         <header className="reveal-up sticky top-5 z-20 rounded-2xl border border-white/10 bg-[#090d1bcc] px-5 py-4 backdrop-blur">
           <div className="flex items-center justify-between gap-4">
-            <Link href="/" className="text-2xl font-bold tracking-tight text-white">
+            <Link href="/" className="hidden text-2xl font-bold tracking-tight text-white md:block">
               WorkLab
             </Link>
             <nav className="hidden items-center gap-7 text-sm text-slate-300 md:flex">
@@ -115,110 +111,8 @@ export default function HomePage() {
               </Link>
               <LanguageSwitcher />
             </nav>
-
-            <div className="relative flex items-center gap-3 md:hidden">
-              <button
-                type="button"
-                aria-expanded={isMobileMenuOpen}
-                aria-label={t.nav.toggleMenu}
-                onClick={() => setIsMobileMenuOpen((prev) => !prev)}
-                className="flex h-10 w-10 items-center justify-center rounded-lg border border-white/15 bg-white/5 text-slate-200 transition hover:border-cyan-200/60 hover:text-cyan-100"
-              >
-                {isMobileMenuOpen ? (
-                  <svg
-                    className="h-5 w-5"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                    aria-hidden="true"
-                  >
-                    <path d="M6 6L18 18M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                  </svg>
-                ) : (
-                  <svg
-                    className="h-5 w-5"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                    aria-hidden="true"
-                  >
-                    <path d="M4 7H20M4 12H20M4 17H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                  </svg>
-                )}
-              </button>
-
-              {isMobileMenuOpen ? (
-                <div className="absolute right-0 top-[calc(100%+0.6rem)] w-56 rounded-xl border border-white/10 bg-[#0b1020]/95 p-3 shadow-[0_16px_42px_rgba(0,0,0,0.45)] backdrop-blur">
-                  <div className="mb-3">
-                    <LanguageSwitcher className="w-full justify-center" />
-                  </div>
-                  <div className="grid gap-2 text-sm">
-                    <a
-                      href="#features"
-                      onClick={closeMobileMenu}
-                      className="rounded-lg px-3 py-2 text-slate-200 transition hover:bg-white/10 hover:text-cyan-100"
-                    >
-                      {t.nav.features}
-                    </a>
-                    <a
-                      href="#pricing"
-                      onClick={closeMobileMenu}
-                      className="rounded-lg px-3 py-2 text-slate-200 transition hover:bg-white/10 hover:text-cyan-100"
-                    >
-                      {t.nav.pricing}
-                    </a>
-                    <Link
-                      href="/ai"
-                      onClick={closeMobileMenu}
-                      className="rounded-lg px-3 py-2 text-slate-200 transition hover:bg-white/10 hover:text-cyan-100"
-                    >
-                      AI
-                    </Link>
-                    {isAuthenticated ? (
-                      <>
-                        <Link
-                          href="/dashboard"
-                          onClick={closeMobileMenu}
-                          className="rounded-lg px-3 py-2 text-slate-200 transition hover:bg-white/10 hover:text-white"
-                        >
-                          Dashboard
-                        </Link>
-                          {isAdmin ? (
-                            <Link
-                              href="/admin"
-                              onClick={closeMobileMenu}
-                              className="rounded-lg px-3 py-2 text-slate-200 transition hover:bg-white/10 hover:text-cyan-100"
-                            >
-                              Admin
-                            </Link>
-                          ) : null}
-                        <Link
-                          href="/dashboard/profile"
-                          onClick={closeMobileMenu}
-                          className="rounded-lg px-3 py-2 text-slate-200 transition hover:bg-white/10 hover:text-white"
-                        >
-                          Profile
-                        </Link>
-                      </>
-                    ) : (
-                      <Link
-                        href="/login"
-                        onClick={closeMobileMenu}
-                        className="rounded-lg px-3 py-2 text-slate-200 transition hover:bg-white/10 hover:text-white"
-                      >
-                        {t.nav.login}
-                      </Link>
-                    )}
-                    <Link
-                      href="/create-employee"
-                      onClick={closeMobileMenu}
-                      className={`${primaryButtonClass} button-pop mt-1 w-full px-4 py-2.5`}
-                    >
-                      {t.nav.createAiEmployee}
-                    </Link>
-                  </div>
-                </div>
-              ) : null}
+            <div className="md:hidden">
+              <MobileTelegramPublicNav isAuthenticated={isAuthenticated} isAdmin={isAdmin} />
             </div>
           </div>
         </header>

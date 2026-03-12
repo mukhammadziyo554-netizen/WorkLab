@@ -4,6 +4,7 @@ import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 import { useLanguage } from "../../components/providers/LanguageProvider";
 import LanguageSwitcher from "../../components/ui/LanguageSwitcher";
+import MobileTelegramPublicNav from "../../components/ui/MobileTelegramPublicNav";
 import { getApiHeaders, getBackendBaseUrl } from "../../lib/backend";
 
 type ChatRole = "user" | "ai";
@@ -188,7 +189,7 @@ export default function AIPage() {
       <div className="mx-auto max-w-6xl px-6 pb-16 pt-6 sm:px-10">
         <header className="sticky top-5 z-20 rounded-2xl border border-white/10 bg-[#090d1bcc] px-5 py-4 backdrop-blur">
           <div className="flex items-center justify-between gap-4">
-            <Link href="/" className="text-2xl font-bold tracking-tight text-white">
+            <Link href="/" className="hidden text-2xl font-bold tracking-tight text-white md:block">
               WorkLab
             </Link>
             <nav className="hidden items-center gap-7 text-sm text-slate-300 md:flex">
@@ -230,66 +231,8 @@ export default function AIPage() {
             </nav>
 
             <div className="md:hidden">
-              <LanguageSwitcher />
+              <MobileTelegramPublicNav isAuthenticated={isAuthenticated} isAdmin={isAdmin} />
             </div>
-          </div>
-
-          <div className="mt-3 flex items-center gap-2 overflow-x-auto pb-1 md:hidden">
-            <Link
-              href="/#features"
-              className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-slate-200"
-            >
-              {t.nav.features}
-            </Link>
-            <Link
-              href="/#pricing"
-              className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-slate-200"
-            >
-              {t.nav.pricing}
-            </Link>
-            <Link
-              href="/ai"
-              className="rounded-lg border border-cyan-300/35 bg-cyan-300/10 px-3 py-1.5 text-xs text-cyan-100"
-            >
-              AI
-            </Link>
-            {isAuthenticated ? (
-              <>
-                <Link
-                  href="/dashboard"
-                  className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-slate-200"
-                >
-                  Dashboard
-                </Link>
-                {isAdmin ? (
-                  <Link
-                    href="/admin"
-                    className="rounded-lg border border-cyan-300/25 bg-cyan-300/10 px-3 py-1.5 text-xs text-cyan-100"
-                  >
-                    Admin
-                  </Link>
-                ) : null}
-                <Link
-                  href="/dashboard/profile"
-                  className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-slate-200"
-                >
-                  Profile
-                </Link>
-              </>
-            ) : (
-              <Link
-                href="/login"
-                className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-slate-200"
-              >
-                {t.nav.login}
-              </Link>
-            )}
-            <Link
-              href="/create-employee"
-              className="rounded-lg border border-cyan-300/25 bg-cyan-300/10 px-3 py-1.5 text-xs text-cyan-100"
-            >
-              {t.nav.createAiEmployee}
-            </Link>
           </div>
         </header>
 
