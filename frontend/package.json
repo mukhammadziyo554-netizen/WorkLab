@@ -2,8 +2,14 @@
   "name": "worklab",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=20 <23"
+  },
   "scripts": {
+    "clean": "rm -rf .next",
+    "predev": "npm run clean",
     "dev": "next dev",
+    "prebuild": "npm run clean",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
