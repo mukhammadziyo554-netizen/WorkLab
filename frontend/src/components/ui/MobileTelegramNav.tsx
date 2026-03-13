@@ -95,7 +95,7 @@ export default function MobileTelegramNav() {
           className="flex items-center justify-between gap-3 px-4 pb-3"
           style={{
             paddingLeft: "calc(env(safe-area-inset-left) + 0.75rem)",
-            paddingRight: "calc(env(safe-area-inset-right) + 0.75rem)",
+            paddingRight: "calc(env(safe-area-inset-right) + 0.55rem)",
           }}
         >
           <button
@@ -123,12 +123,12 @@ export default function MobileTelegramNav() {
             WorkLab
           </Link>
 
-          <LanguageSwitcher />
+          <LanguageSwitcher className="translate-x-1" />
         </div>
       </header>
 
       <div
-        className={`fixed inset-0 z-40 bg-black/45 transition-opacity md:hidden ${
+        className={`fixed inset-0 z-40 bg-black/70 backdrop-blur-[1px] transition-opacity md:hidden ${
           isOpen ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
         }`}
         style={{ transitionDuration: "250ms" }}
@@ -136,7 +136,7 @@ export default function MobileTelegramNav() {
         aria-hidden={!isOpen}
       >
         <aside
-          className={`h-full w-[52vw] min-w-[220px] max-w-[320px] border-r border-white/10 bg-[#0a1020] p-4 shadow-[0_12px_36px_rgba(0,0,0,0.5)] transition-transform ${
+          className={`h-full w-[52vw] min-w-[220px] max-w-[320px] border-r border-cyan-300/20 bg-[#050914]/95 p-4 shadow-[0_18px_48px_rgba(0,0,0,0.62)] backdrop-blur-xl transition-transform ${
             isOpen ? "translate-x-0" : "-translate-x-full"
           }`}
           style={{
@@ -156,8 +156,8 @@ export default function MobileTelegramNav() {
                   href={item.href}
                   className={`rounded-lg px-3 py-2.5 text-sm transition ${
                     isActive
-                      ? "border border-cyan-300/35 bg-cyan-300/15 text-cyan-100"
-                      : "border border-transparent text-slate-200 hover:border-white/10 hover:bg-white/10"
+                      ? "border border-cyan-300/45 bg-cyan-300/20 text-cyan-100"
+                      : "border border-transparent text-slate-100 hover:border-cyan-300/30 hover:bg-white/12 hover:text-white"
                   }`}
                 >
                   {item.label}
@@ -169,7 +169,7 @@ export default function MobileTelegramNav() {
               type="button"
               onClick={onLogout}
               disabled={isLoggingOut}
-              className="mt-2 rounded-lg border border-white/10 px-3 py-2.5 text-left text-sm text-slate-200 transition hover:border-rose-300/45 hover:bg-rose-400/10 hover:text-rose-200"
+              className="mt-2 rounded-lg border border-white/15 px-3 py-2.5 text-left text-sm text-slate-100 transition hover:border-rose-300/45 hover:bg-rose-400/14 hover:text-rose-200"
             >
               {isLoggingOut ? `${t.mobileNav.logout}...` : t.mobileNav.logout}
             </button>
