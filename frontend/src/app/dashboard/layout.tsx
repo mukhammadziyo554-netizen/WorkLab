@@ -6,8 +6,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Sidebar from "../../components/ui/Sidebar";
 import MobileTelegramNav from "../../components/ui/MobileTelegramNav";
+import DashboardTopBar from "../../components/ui/DashboardTopBar";
 import { getApiHeaders, getBackendBaseUrl } from "../../lib/backend";
 import { fetchBillingStatus } from "../../lib/billing";
+import { clearSessionToken } from "../../lib/session";
 
 type DashboardLayoutProps = {
   children: ReactNode;
@@ -27,7 +29,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
     const backendBaseUrl = getBackendBaseUrl();
     if (!backendBaseUrl) {
-      window.localStorage.removeItem("worklab_session_token");
+      clearSessionToken();
       router.replace("/login");
       return;
     }
@@ -41,7 +43,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         });
 
         if (!response.ok) {
-          window.localStorage.removeItem("worklab_session_token");
+          clearSessionToken();
           router.replace("/login");
           return;
         }
@@ -55,7 +57,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           setIsAdmin(false);
         }
       } catch {
-        window.localStorage.removeItem("worklab_session_token");
+        clearSessionToken();
         router.replace("/login");
       }
     };
@@ -71,9 +73,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       <div className="md:hidden">
         <MobileTelegramNav />
       </div>
-      <main className="flex-1 p-6 sm:p-8 lg:p-10">
+      <div className="flex-1">
+        <DashboardTopBar />
+        <main className="p-5 sm:p-6 lg:p-8">
         {billingStatus && billingStatus !== "active" && !isAdmin ? (
-          <div className="mb-5 rounded-xl border border-amber-300/40 bg-amber-300/10 p-4 text-sm text-amber-100">
+          <div className="mb-4 rounded-xl border border-amber-300/40 bg-amber-300/10 p-3.5 text-[0.85rem] text-amber-100">
             <p className="font-semibold">Subscription Required</p>
             <p className="mt-1 text-amber-100/90">
               Some features are locked until you activate a plan.
@@ -84,7 +88,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           </div>
         ) : null}
         {children}
-      </main>
+        </main>
+      </div>
     </div>
   );
 }

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { getApiHeaders, getBackendBaseUrl } from "../../../lib/backend";
+import { useLanguage } from "../../../components/providers/LanguageProvider";
 
 type ChatRole = "user" | "ai";
 
@@ -79,6 +80,7 @@ function formatUpdatedAt(value: string): string {
 }
 
 export default function AiChatPage() {
+  const { t } = useLanguage();
   const [query, setQuery] = useState("");
   const [messageInput, setMessageInput] = useState("");
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -118,7 +120,7 @@ export default function AiChatPage() {
     const mappedConversations: Conversation[] = (data.conversations || []).map((conversation) => ({
       id: conversation.id,
       name: conversation.title,
-      lastMessage: conversation.last_message || "No messages yet",
+      lastMessage: conversation.last_message || t.aiChatPage.noMessagesYet,
       updatedAt: formatUpdatedAt(conversation.updated_at),
     }));
 
@@ -195,7 +197,7 @@ export default function AiChatPage() {
 
     const bootstrap = async () => {
       if (!backendBaseUrl) {
-        setErrorText("Backend URL is not configured.");
+        setErrorText(t.aiChatPage.backendNotConfigured);
         setIsLoading(false);
         return;
       }
@@ -204,7 +206,7 @@ export default function AiChatPage() {
         await loadConversations();
       } catch (error) {
         if (!cancelled) {
-          setErrorText(error instanceof Error && error.message === "subscription-required" ? "Subscription required for AI Chat." : "Unable to load conversations.");
+          setErrorText(error instanceof Error && error.message === "subscription-required" ? t.aiChatPage.subscriptionRequired : t.aiChatPage.unableLoadConversations);
         }
       } finally {
         if (!cancelled) {
@@ -226,9 +228,9 @@ export default function AiChatPage() {
     }
 
     void loadMessages(activeConversationId).catch((error) => {
-      setErrorText(error instanceof Error && error.message === "subscription-required" ? "Subscription required for AI Chat." : "Unable to load conversation messages.");
+      setErrorText(error instanceof Error && error.message === "subscription-required" ? t.aiChatPage.subscriptionRequired : t.aiChatPage.unableLoadMessages);
     });
-  }, [activeConversationId]);
+  }, [activeConversationId, t.aiChatPage.subscriptionRequired, t.aiChatPage.unableLoadMessages]);
 
   const visibleConversations = useMemo(() => {
     const normalized = query.trim().toLowerCase();
@@ -263,7 +265,7 @@ export default function AiChatPage() {
     try {
       await loadMessages(activeConversationId, oldestMessageId);
     } catch (error) {
-      setErrorText(error instanceof Error && error.message === "subscription-required" ? "Subscription required for AI Chat." : "Unable to load older messages.");
+      setErrorText(error instanceof Error && error.message === "subscription-required" ? t.aiChatPage.subscriptionRequired : t.aiChatPage.unableLoadOlderMessages);
     } finally {
       setIsLoadingOlder(false);
     }
@@ -275,14 +277,14 @@ export default function AiChatPage() {
     }
 
     const currentTitle = conversations.find((item) => item.id === activeConversationId)?.name || "";
-    const nextTitle = window.prompt("Rename conversation", currentTitle)?.trim();
+    const nextTitle = window.prompt(t.aiChatPage.renamePrompt, currentTitle)?.trim();
     if (!nextTitle || !backendBaseUrl) {
       return;
     }
 
     const token = window.localStorage.getItem(SESSION_KEY);
     if (!token) {
-      setErrorText("Session is missing.");
+      setErrorText(t.aiChatPage.sessionMissing);
       return;
     }
 
@@ -302,7 +304,7 @@ export default function AiChatPage() {
 
       await loadConversations(activeConversationId);
     } catch {
-      setErrorText("Unable to rename this conversation.");
+      setErrorText(t.aiChatPage.renameFailed);
     }
   };
 
@@ -311,14 +313,14 @@ export default function AiChatPage() {
       return;
     }
 
-    const confirmed = window.confirm("Delete this conversation? This cannot be undone.");
+    const confirmed = window.confirm(t.aiChatPage.deleteConfirm);
     if (!confirmed) {
       return;
     }
 
     const token = window.localStorage.getItem(SESSION_KEY);
     if (!token) {
-      setErrorText("Session is missing.");
+      setErrorText(t.aiChatPage.sessionMissing);
       return;
     }
 
@@ -341,7 +343,7 @@ export default function AiChatPage() {
       });
       await loadConversations();
     } catch {
-      setErrorText("Unable to delete this conversation.");
+      setErrorText(t.aiChatPage.deleteFailed);
     }
   };
 
@@ -355,7 +357,7 @@ export default function AiChatPage() {
 
     const token = window.localStorage.getItem(SESSION_KEY);
     if (!backendBaseUrl || !token) {
-      setErrorText("Backend URL is not configured.");
+      setErrorText(t.aiChatPage.backendNotConfigured);
       return;
     }
 
@@ -399,7 +401,7 @@ export default function AiChatPage() {
       }
 
       const data = (await response.json()) as ChatApiResponse;
-      const aiReply = data.reply || "I received your message.";
+      const aiReply = data.reply || t.aiChatPage.defaultAiReply;
       const conversationId = data.conversation_id || activeConversationId;
 
       const aiMessage: ChatMessage = {
@@ -426,7 +428,7 @@ export default function AiChatPage() {
         await loadMessages(conversationId);
       }
     } catch (error) {
-      setErrorText(error instanceof Error && error.message === "subscription-required" ? "Subscription required for AI Chat." : "Unable to reach AI service right now. Please try again.");
+      setErrorText(error instanceof Error && error.message === "subscription-required" ? t.aiChatPage.subscriptionRequired : t.aiChatPage.unableReachAi);
     } finally {
       setIsTyping(false);
     }
@@ -434,23 +436,23 @@ export default function AiChatPage() {
 
   return (
     <section className="animate-fade-in mx-auto max-w-7xl">
-      <header className="mb-6 rounded-2xl border border-white/10 bg-gradient-to-r from-cyan-300/10 to-purple-500/10 p-5 sm:p-6">
-        <p className="text-xs uppercase tracking-[0.2em] text-cyan-200">Support Workspace</p>
-        <h1 className="mt-2 text-3xl font-bold tracking-tight text-white sm:text-4xl">AI Support Chat</h1>
+      <header data-reveal className="scroll-reveal mb-6 rounded-2xl border border-white/10 bg-gradient-to-r from-cyan-300/10 to-purple-500/10 p-5 sm:p-6">
+        <p className="text-xs uppercase tracking-[0.2em] text-cyan-200">{t.aiChatPage.supportWorkspace}</p>
+        <h1 className="mt-2 text-3xl font-bold tracking-tight text-white sm:text-4xl">{t.aiChatPage.title}</h1>
       </header>
 
       <div className="grid min-h-[70vh] gap-4 md:grid-cols-[300px,1fr]">
-        <aside className="rounded-2xl border border-white/10 bg-[#091022]/80 p-4 backdrop-blur-xl">
+        <aside data-reveal className="scroll-reveal card-premium rounded-2xl p-4 backdrop-blur-xl">
           <div className="mb-3">
-            <p className="text-[11px] uppercase tracking-[0.18em] text-cyan-200">Customer Chats</p>
-            <p className="mt-1 text-xs text-slate-400">Recent interactions</p>
+            <p className="text-[11px] uppercase tracking-[0.18em] text-cyan-200">{t.aiChatPage.customerChats}</p>
+            <p className="mt-1 text-xs text-slate-400">{t.aiChatPage.recentInteractions}</p>
           </div>
 
           <div className="mb-3">
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search conversations"
+              placeholder={t.aiChatPage.searchPlaceholder}
               className="h-10 w-full rounded-xl border border-white/15 bg-white/5 px-3 text-sm text-white placeholder:text-slate-400 focus:border-cyan-300/60 focus:outline-none focus:ring-2 focus:ring-cyan-300/20"
             />
           </div>
@@ -458,13 +460,13 @@ export default function AiChatPage() {
           <div className="space-y-2">
             {isLoading ? (
               <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-4 text-sm text-slate-300">
-                Loading conversations...
+                {t.aiChatPage.loadingConversations}
               </div>
             ) : null}
 
             {!isLoading && visibleConversations.length === 0 ? (
               <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-4 text-sm text-slate-300">
-                No conversations yet. Send a message to start your first chat.
+                {t.aiChatPage.noConversationsPrompt}
               </div>
             ) : null}
 
@@ -475,7 +477,7 @@ export default function AiChatPage() {
                   key={conversation.id}
                   type="button"
                   onClick={() => setActiveConversationId(conversation.id)}
-                  className={`w-full rounded-xl border px-3 py-3 text-left transition ${
+                  className={`button-pop w-full rounded-xl border px-3 py-3 text-left transition ${
                     isActive
                       ? "border-cyan-300/35 bg-cyan-300/10"
                       : "border-white/10 bg-white/5 hover:border-white/20"
@@ -492,27 +494,27 @@ export default function AiChatPage() {
           </div>
         </aside>
 
-        <div className="flex min-h-[68vh] flex-col rounded-2xl border border-white/10 bg-[#0a1022]/80 backdrop-blur-xl">
+        <div data-reveal className="scroll-reveal card-premium flex min-h-[68vh] flex-col rounded-2xl backdrop-blur-xl">
           <div className="flex items-center justify-between border-b border-white/10 px-4 py-3 sm:px-5">
             <p className="truncate text-sm font-semibold text-white">
-              {conversations.find((item) => item.id === activeConversationId)?.name || "New chat"}
+              {conversations.find((item) => item.id === activeConversationId)?.name || t.aiChatPage.newChat}
             </p>
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={onRenameConversation}
                 disabled={!activeConversationId}
-                className="rounded-lg border border-white/15 px-2.5 py-1.5 text-xs text-slate-200 transition hover:border-cyan-300/40 hover:text-cyan-200 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="button-pop rounded-lg border border-white/15 px-2.5 py-1.5 text-xs text-slate-200 transition hover:border-cyan-300/40 hover:text-cyan-200 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                Rename
+                {t.aiChatPage.rename}
               </button>
               <button
                 type="button"
                 onClick={onDeleteConversation}
                 disabled={!activeConversationId}
-                className="rounded-lg border border-white/15 px-2.5 py-1.5 text-xs text-rose-200 transition hover:border-rose-300/40 hover:bg-rose-400/10 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="button-pop rounded-lg border border-white/15 px-2.5 py-1.5 text-xs text-rose-200 transition hover:border-rose-300/40 hover:bg-rose-400/10 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                Delete
+                {t.aiChatPage.delete}
               </button>
             </div>
           </div>
@@ -520,7 +522,7 @@ export default function AiChatPage() {
           <div className="flex-1 space-y-3 overflow-y-auto p-4 sm:p-5">
             {!activeConversationId && !isLoading ? (
               <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300">
-                Select a conversation or send a message to create a new one.
+                {t.aiChatPage.selectConversationPrompt}
               </div>
             ) : null}
 
@@ -530,9 +532,9 @@ export default function AiChatPage() {
                   type="button"
                   onClick={onLoadOlderMessages}
                   disabled={isLoadingOlder}
-                  className="rounded-lg border border-white/15 px-3 py-1.5 text-xs text-slate-200 transition hover:border-cyan-300/40 hover:text-cyan-200 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="button-pop rounded-lg border border-white/15 px-3 py-1.5 text-xs text-slate-200 transition hover:border-cyan-300/40 hover:text-cyan-200 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {isLoadingOlder ? "Loading..." : "Load older messages"}
+                  {isLoadingOlder ? t.aiChatPage.loading : t.aiChatPage.loadOlderMessages}
                 </button>
               </div>
             ) : null}
@@ -570,9 +572,9 @@ export default function AiChatPage() {
             {errorText ? (
               <p className="mb-2 text-xs text-rose-300">
                 {errorText}
-                {errorText.includes("Subscription required") ? (
+                {errorText.includes(t.aiChatPage.subscriptionRequired) ? (
                   <Link href="/pricing" className="ml-2 text-cyan-200 underline underline-offset-2">
-                    Upgrade plan
+                    {t.aiChatPage.upgradePlan}
                   </Link>
                 ) : null}
               </p>
@@ -581,7 +583,7 @@ export default function AiChatPage() {
               <button
                 type="button"
                 aria-label="Attachment (coming soon)"
-                className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-white/15 bg-white/5 text-slate-300 transition hover:border-white/25 hover:text-white"
+                className="button-pop inline-flex h-11 w-11 items-center justify-center rounded-xl border border-white/15 bg-white/5 text-slate-300 transition hover:border-white/25 hover:text-white"
               >
                 <svg
                   viewBox="0 0 24 24"
@@ -603,16 +605,16 @@ export default function AiChatPage() {
               <input
                 value={messageInput}
                 onChange={(event) => setMessageInput(event.target.value)}
-                placeholder="Type your message..."
+                placeholder={t.aiChatPage.typeMessagePlaceholder}
                 className="h-11 flex-1 rounded-xl border border-white/15 bg-white/5 px-4 text-sm text-white placeholder:text-slate-400 focus:border-cyan-300/60 focus:outline-none focus:ring-2 focus:ring-cyan-300/20"
               />
 
               <button
                 type="submit"
                 disabled={isTyping}
-                className="h-11 rounded-xl bg-cyan-300 px-4 text-sm font-semibold text-slate-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-70"
+                className="button-glow button-pop h-11 rounded-xl bg-cyan-300 px-4 text-sm font-semibold text-slate-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-70"
               >
-                Send
+                {t.aiChatPage.send}
               </button>
             </form>
           </div>

@@ -15,11 +15,13 @@ __pycache__/
 .venv/
 venv/
 
-# Env files
+# Env files - CRITICAL: Never commit environment files
 .env
 .env.*
 backend/.env
+backend/.env.production
 frontend/.env.local
+frontend/.env.production
 
 # Local runtime data
 *.db
@@ -35,6 +37,7 @@ backend/.run_telegram_bot.lock
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+/var/log/
 
 # Build artifacts
 dist/
@@ -45,3 +48,27 @@ coverage/
 /src
 /next-env.d.ts
 /tsconfig.json
+
+# Production deployment artifacts
+.dev/
+/var/lib/worklab/
+/backups/
+*.service.local
+pm2-process-list.json
+pm2-dump.pm2
+
+# IDE
+*.iml
+*.iws
+*.ipr
+.idea/
+*.swp
+*.swo
+*~
+
+# Sensitive files
+.ssh/
+*.pem
+*.key
+*.p12
+

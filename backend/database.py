@@ -249,6 +249,23 @@ def init_database() -> None:
 
         cursor.execute(
             """
+            CREATE TABLE IF NOT EXISTS ai_response_feedback (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                owner_type TEXT NOT NULL,
+                owner_id INTEGER NOT NULL,
+                conversation_id TEXT NOT NULL,
+                message_id INTEGER,
+                feedback_type TEXT NOT NULL,
+                source_question TEXT,
+                suggested_answer TEXT,
+                status TEXT NOT NULL DEFAULT 'pending',
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
+
+        cursor.execute(
+            """
             CREATE TABLE IF NOT EXISTS billing_history (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 user_id INTEGER NOT NULL,
@@ -357,6 +374,12 @@ def init_database() -> None:
         _ensure_column(conn, "web_users", "subscription_expiry", "TEXT")
         _ensure_column(conn, "web_users", "payment_method_last4", "TEXT")
         _ensure_column(conn, "web_users", "payment_method_brand", "TEXT")
+        _ensure_column(conn, "ai_employee_configs", "communication_style", "TEXT")
+        _ensure_column(conn, "ai_employee_configs", "response_length", "TEXT")
+        _ensure_column(conn, "ai_employee_configs", "response_tone", "TEXT")
+        _ensure_column(conn, "ai_employee_configs", "response_speed_priority", "TEXT")
+        _ensure_column(conn, "ai_employee_configs", "context_memory_depth", "INTEGER")
+        _ensure_column(conn, "monitored_conversations", "assigned_employee_id", "INTEGER")
 
         conn.commit()
 

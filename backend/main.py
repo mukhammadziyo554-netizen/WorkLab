@@ -151,6 +151,15 @@ class AIEmployeeCreateRequest(BaseModel):
     language: str = Field(default="en", pattern="^(en|ru|uz)$")
     tone: str = Field(default="friendly", min_length=2, max_length=40)
     knowledge_base_reference: Optional[str] = Field(default=None, max_length=255)
+    communication_style: Optional[str] = Field(default="Professional", max_length=40)
+    response_length: Optional[str] = Field(default="Medium", max_length=40)
+    response_tone: Optional[str] = Field(default="Balanced", max_length=40)
+    response_speed_priority: Optional[str] = Field(default="Balanced", max_length=40)
+    context_memory_depth: Optional[int] = Field(default=10, ge=3, le=50)
+
+
+class TakeoverRequest(BaseModel):
+    active: bool = True
 
 
 class HumanReplyRequest(BaseModel):
@@ -159,6 +168,18 @@ class HumanReplyRequest(BaseModel):
 
 class CorrectionRequest(BaseModel):
     corrected_answer: str = Field(..., min_length=1, max_length=5000)
+
+
+class AIResponseFeedbackRequest(BaseModel):
+    message_id: Optional[int] = Field(default=None, ge=1)
+    feedback_type: str = Field(..., pattern="^(correct|needs_improvement|incorrect)$")
+    suggested_answer: Optional[str] = Field(default=None, max_length=5000)
+
+
+class FAQSuggestionDecisionRequest(BaseModel):
+    question: str = Field(..., min_length=3, max_length=300)
+    answer: str = Field(..., min_length=3, max_length=1000)
+    approved: bool
 
 
 class BillingCheckoutRequest(BaseModel):
@@ -333,6 +354,358 @@ def _build_knowledge_base_hint(owner_type: str, owner_id: int) -> Optional[str]:
     faq = (row[2] or "").strip()
     combined = " ".join(part for part in [delivery_rules, pricing_information, faq] if part)
     return combined or None
+
+
+def _estimate_sentiment_label(text: str) -> str:
+    normalized = text.strip().lower()
+    if not normalized:
+        return "neutral"
+
+    negative_markers = [
+        "third time",
+        "still waiting",
+        "angry",
+        "bad",
+        "terrible",
+        "refund now",
+        "not working",
+        "again",
+        "can't",
+        "cannot",
+        "problem",
+        "issue",
+        "yomon",
+        "muammo",
+        "плохо",
+        "проблем",
+    ]
+    positive_markers = [
+        "thanks",
+        "great",
+        "perfect",
+        "awesome",
+        "good",
+        "rahmat",
+        "zor",
+        "спасибо",
+        "отлично",
+    ]
+
+    if any(marker in normalized for marker in negative_markers):
+        return "negative"
+    if any(marker in normalized for marker in positive_markers):
+        return "positive"
+    return "neutral"
+
+
+def _build_knowledge_insights(owner_type: str, owner_id: int) -> dict[str, Any]:
+    with sqlite3.connect(DB_PATH) as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT business_description, products_services, delivery_rules, working_hours, pricing_information, faq
+            FROM knowledge_base_entries
+            WHERE owner_type = ? AND owner_id = ?
+            """,
+            (owner_type, owner_id),
+        )
+        row = cursor.fetchone()
+
+        if not row:
+            return {
+                "summary": "No knowledge base content yet.",
+                "key_topics": [],
+                "suggested_faqs": [],
+                "coverage_score": 0,
+            }
+
+        fields = [str(value or "").strip() for value in row]
+        full_text = " ".join([value for value in fields if value]).strip()
+
+        summary = full_text[:220] + ("..." if len(full_text) > 220 else "") if full_text else "No summary available."
+
+        topic_candidates = {
+            "delivery": ["delivery", "yetkaz", "достав"],
+            "pricing": ["price", "pricing", "cost", "narx", "цена"],
+            "working_hours": ["hour", "working", "open", "ish vaqti", "время"],
+            "products": ["product", "service", "товар", "xizmat"],
+            "refunds": ["refund", "return", "возврат", "qaytar"],
+        }
+        key_topics: list[str] = []
+        lowered_text = full_text.lower()
+        for topic, markers in topic_candidates.items():
+            if any(marker in lowered_text for marker in markers):
+                key_topics.append(topic.replace("_", " ").title())
+
+        suggested_faqs: list[dict[str, str]] = []
+        if "delivery" in lowered_text or "yetkaz" in lowered_text or "достав" in lowered_text:
+            suggested_faqs.append(
+                {
+                    "question": "What is the delivery time?",
+                    "answer": "Delivery timelines are defined in your delivery rules section.",
+                }
+            )
+        if "price" in lowered_text or "cost" in lowered_text or "narx" in lowered_text:
+            suggested_faqs.append(
+                {
+                    "question": "How much does it cost?",
+                    "answer": "Pricing details are available in your pricing information section.",
+                }
+            )
+        if "refund" in lowered_text or "return" in lowered_text or "возврат" in lowered_text:
+            suggested_faqs.append(
+                {
+                    "question": "Can I request a refund?",
+                    "answer": "Refund policy can be confirmed from your support team guidelines.",
+                }
+            )
+
+        cursor.execute(
+            """
+            SELECT COUNT(*)
+            FROM monitored_messages mm
+            JOIN monitored_conversations mc ON mc.id = mm.conversation_id
+            WHERE mc.owner_type = ? AND mc.owner_id = ? AND mm.sender_type = 'customer'
+            """,
+            (owner_type, owner_id),
+        )
+        customer_messages = int(cursor.fetchone()[0] or 0)
+
+        cursor.execute(
+            """
+            SELECT COUNT(*)
+            FROM monitored_messages mm
+            JOIN monitored_conversations mc ON mc.id = mm.conversation_id
+            WHERE mc.owner_type = ? AND mc.owner_id = ? AND mm.sender_type = 'ai' AND COALESCE(mm.confidence, 0) >= 0.65
+            """,
+            (owner_type, owner_id),
+        )
+        strong_ai_answers = int(cursor.fetchone()[0] or 0)
+
+    if customer_messages == 0:
+        coverage_score = 78 if full_text else 0
+    else:
+        coverage_score = int(min(99, max(0, (strong_ai_answers / customer_messages) * 100)))
+
+    return {
+        "summary": summary,
+        "key_topics": key_topics,
+        "suggested_faqs": suggested_faqs,
+        "coverage_score": coverage_score,
+    }
+
+
+def _assess_conversation_metrics(messages: list[dict[str, Any]]) -> dict[str, Any]:
+    negative_count = 0
+    repeat_like_count = 0
+    low_confidence_count = 0
+    ai_count = 0
+    customer_count = 0
+
+    seen_customer_messages: set[str] = set()
+
+    for message in messages:
+        sender = str(message.get("sender_type", ""))
+        content = str(message.get("content", ""))
+        confidence = message.get("confidence")
+
+        if sender == "customer":
+            customer_count += 1
+            sentiment = _estimate_sentiment_label(content)
+            if sentiment == "negative":
+                negative_count += 1
+
+            normalized_content = content.strip().lower()
+            if normalized_content in seen_customer_messages:
+                repeat_like_count += 1
+            elif normalized_content:
+                seen_customer_messages.add(normalized_content)
+
+            if any(marker in normalized_content for marker in ["again", "third time", "still", "not solved", "still waiting"]):
+                repeat_like_count += 1
+
+        if sender == "ai":
+            ai_count += 1
+            if confidence is not None and float(confidence) < 0.6:
+                low_confidence_count += 1
+
+    risk_score = negative_count * 2 + repeat_like_count * 2 + low_confidence_count
+    if risk_score >= 5:
+        escalation_risk = "High"
+    elif risk_score >= 2:
+        escalation_risk = "Medium"
+    else:
+        escalation_risk = "Low"
+
+    satisfaction = 4.8 - (negative_count * 0.4) - (repeat_like_count * 0.3) - (low_confidence_count * 0.2)
+    satisfaction = max(1.0, min(5.0, round(satisfaction, 1)))
+
+    if ai_count == 0:
+        resolution_quality = 0
+    else:
+        strong_ai = max(0, ai_count - low_confidence_count)
+        resolution_quality = int((strong_ai / ai_count) * 100)
+
+    return {
+        "estimated_satisfaction_score": satisfaction,
+        "resolution_quality_score": resolution_quality,
+        "escalation_risk": escalation_risk,
+        "takeover_recommended": escalation_risk == "High",
+        "negative_messages": negative_count,
+        "repeat_questions": repeat_like_count,
+        "low_confidence_count": low_confidence_count,
+        "customer_messages": customer_count,
+    }
+
+
+def _pick_ai_employee(owner_type: str, owner_id: int, message_text: str) -> dict[str, Any]:
+    normalized = message_text.strip().lower()
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT id, name, role,
+                   COALESCE(response_length, 'Medium') AS response_length,
+                   COALESCE(response_speed_priority, 'Balanced') AS response_speed_priority,
+                   COALESCE(context_memory_depth, 10) AS context_memory_depth
+            FROM ai_employee_configs
+            WHERE owner_type = ? AND owner_id = ? AND is_active = 1
+            ORDER BY id ASC
+            """,
+            (owner_type, owner_id),
+        )
+        rows = cursor.fetchall()
+
+    if not rows:
+        return {
+            "id": None,
+            "name": "Default AI",
+            "role": "Customer Support Agent",
+            "response_length": "Medium",
+            "response_speed_priority": "Balanced",
+            "context_memory_depth": 10,
+        }
+
+    keyword_map = {
+        "Sales": ["buy", "price", "discount", "sale", "offer", "narx"],
+        "Technical": ["error", "bug", "not working", "issue", "problem", "api"],
+        "Support": ["delivery", "refund", "status", "order", "help", "support"],
+        "FAQ": ["faq", "hours", "location", "contact"],
+    }
+
+    for row in rows:
+        role = str(row["role"])
+        for role_key, keywords in keyword_map.items():
+            if role_key.lower() in role.lower() and any(keyword in normalized for keyword in keywords):
+                return {
+                    "id": int(row["id"]),
+                    "name": str(row["name"]),
+                    "role": role,
+                    "response_length": str(row["response_length"]),
+                    "response_speed_priority": str(row["response_speed_priority"]),
+                    "context_memory_depth": int(row["context_memory_depth"]),
+                }
+
+    row = rows[0]
+    return {
+        "id": int(row["id"]),
+        "name": str(row["name"]),
+        "role": str(row["role"]),
+        "response_length": str(row["response_length"]),
+        "response_speed_priority": str(row["response_speed_priority"]),
+        "context_memory_depth": int(row["context_memory_depth"]),
+    }
+
+
+def _shape_response_text(text: str, response_length: str, response_speed_priority: str) -> str:
+    normalized_length = response_length.strip().lower()
+    normalized_speed = response_speed_priority.strip().lower()
+    cleaned = " ".join(text.split())
+
+    sentences = [sentence.strip() for sentence in cleaned.replace("\n", " ").split(".") if sentence.strip()]
+
+    if normalized_length.startswith("short"):
+        cleaned = ". ".join(sentences[:2]).strip()
+        if cleaned and not cleaned.endswith("."):
+            cleaned += "."
+    elif normalized_length.startswith("medium") and len(sentences) > 4:
+        cleaned = ". ".join(sentences[:4]).strip()
+        if cleaned and not cleaned.endswith("."):
+            cleaned += "."
+
+    if normalized_speed.startswith("fast"):
+        cleaned = cleaned.replace("Please let me know if you need anything else.", "")
+    elif normalized_speed.startswith("more thoughtful"):
+        cleaned = f"{cleaned} If you want, I can provide a more detailed step-by-step explanation."
+
+    return cleaned.strip() or text
+
+
+def _build_notifications(owner_type: str, owner_id: int) -> list[dict[str, Any]]:
+    alerts: list[dict[str, Any]] = []
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+
+        cursor.execute(
+            """
+            SELECT mm.conversation_id, mm.content, mm.confidence, mm.created_at
+            FROM monitored_messages mm
+            JOIN monitored_conversations mc ON mc.id = mm.conversation_id
+            WHERE mc.owner_type = ? AND mc.owner_id = ? AND mm.sender_type = 'ai' AND COALESCE(mm.confidence, 0) < 0.6
+            ORDER BY mm.id DESC
+            LIMIT 5
+            """,
+            (owner_type, owner_id),
+        )
+        for row in cursor.fetchall():
+            alerts.append(
+                {
+                    "type": "low_confidence",
+                    "severity": "medium",
+                    "conversation_id": str(row["conversation_id"]),
+                    "message": f"AI confidence dropped to {int(float(row['confidence']) * 100)}%. Consider review.",
+                    "created_at": str(row["created_at"]),
+                }
+            )
+
+        cursor.execute(
+            """
+            SELECT id, last_message, last_timestamp
+            FROM monitored_conversations
+            WHERE owner_type = ? AND owner_id = ? AND unread_count > 0 AND taken_over = 0
+            ORDER BY updated_at DESC
+            LIMIT 5
+            """,
+            (owner_type, owner_id),
+        )
+        for row in cursor.fetchall():
+            content = str(row["last_message"] or "")
+            if content and _estimate_sentiment_label(content) == "negative":
+                alerts.append(
+                    {
+                        "type": "high_escalation_risk",
+                        "severity": "high",
+                        "conversation_id": str(row["id"]),
+                        "message": "Negative sentiment detected. Human support recommended.",
+                        "created_at": str(row["last_timestamp"]),
+                    }
+                )
+
+        insights = _build_knowledge_insights(owner_type, owner_id)
+        if int(insights["coverage_score"]) < 75:
+            alerts.append(
+                {
+                    "type": "knowledge_gap",
+                    "severity": "medium",
+                    "conversation_id": None,
+                    "message": "Knowledge coverage is below 75%. Add more delivery, pricing, and FAQ details.",
+                    "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                }
+            )
+
+    return alerts[:10]
 
 
 def _generate_trained_ai_response(
@@ -1935,7 +2308,8 @@ async def list_monitored_conversations(
         cursor = conn.cursor()
         cursor.execute(
             """
-            SELECT id, customer_handle, customer_name, last_message, last_timestamp, unread_count, taken_over
+            SELECT id, customer_handle, customer_name, last_message, last_timestamp, unread_count, taken_over,
+                   assigned_employee_id
             FROM monitored_conversations
             WHERE owner_type = ? AND owner_id = ?
             ORDER BY last_timestamp DESC
@@ -1953,6 +2327,8 @@ async def list_monitored_conversations(
             "timestamp": row["last_timestamp"],
             "unread_count": int(row["unread_count"] or 0),
             "taken_over": bool(row["taken_over"]),
+            "assigned_employee_id": int(row["assigned_employee_id"]) if row["assigned_employee_id"] is not None else None,
+            "sentiment": _estimate_sentiment_label(str(row["last_message"] or "")),
         }
         for row in rows
     ]
@@ -1977,7 +2353,7 @@ async def get_monitored_conversation(
         cursor = conn.cursor()
         cursor.execute(
             """
-            SELECT id, customer_handle, customer_name, taken_over
+            SELECT id, customer_handle, customer_name, taken_over, assigned_employee_id
             FROM monitored_conversations
             WHERE id = ? AND owner_type = ? AND owner_id = ?
             """,
@@ -2005,10 +2381,35 @@ async def get_monitored_conversation(
             "content": str(row["content"]),
             "confidence": float(row["confidence"]) if row["confidence"] is not None else None,
             "created_at": str(row["created_at"]),
-            "low_confidence": row["confidence"] is not None and float(row["confidence"]) < 0.7,
+            "low_confidence": row["confidence"] is not None and float(row["confidence"]) < 0.6,
+            "sentiment": _estimate_sentiment_label(str(row["content"] or "")),
         }
         for row in messages_rows
     ]
+
+    monitoring = _assess_conversation_metrics(messages)
+
+    assigned_employee = None
+    assigned_employee_id = conversation["assigned_employee_id"]
+    if assigned_employee_id is not None:
+        with sqlite3.connect(DB_PATH) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute(
+                """
+                SELECT id, name, role
+                FROM ai_employee_configs
+                WHERE id = ?
+                """,
+                (int(assigned_employee_id),),
+            )
+            employee_row = cursor.fetchone()
+        if employee_row:
+            assigned_employee = {
+                "id": int(employee_row["id"]),
+                "name": str(employee_row["name"]),
+                "role": str(employee_row["role"]),
+            }
 
     return {
         "ok": True,
@@ -2017,14 +2418,17 @@ async def get_monitored_conversation(
             "customer_handle": conversation["customer_handle"],
             "customer_name": conversation["customer_name"],
             "taken_over": bool(conversation["taken_over"]),
+            "assigned_employee": assigned_employee,
         },
         "messages": messages,
+        "monitoring": monitoring,
     }
 
 
-@app.post("/operations/conversations/{conversation_id}/takeover")
-async def toggle_takeover(
+@app.post("/operations/conversations/{conversation_id}/feedback")
+async def submit_ai_feedback(
     conversation_id: str,
+    request: AIResponseFeedbackRequest,
     authorization: Optional[str] = Header(default=None),
 ) -> dict[str, Any]:
     owner_type, owner_id = _get_authenticated_actor(authorization)
@@ -2038,18 +2442,204 @@ async def toggle_takeover(
         cursor = conn.cursor()
         cursor.execute(
             """
-            UPDATE monitored_conversations
-            SET taken_over = 1, unread_count = 0, updated_at = CURRENT_TIMESTAMP
+            SELECT id
+            FROM monitored_conversations
             WHERE id = ? AND owner_type = ? AND owner_id = ?
             """,
             (conversation_id, owner_type, owner_id),
+        )
+        if not cursor.fetchone():
+            raise HTTPException(status_code=404, detail="Conversation not found")
+
+        cursor.execute(
+            """
+            SELECT content
+            FROM monitored_messages
+            WHERE conversation_id = ? AND sender_type = 'customer'
+            ORDER BY id DESC
+            LIMIT 1
+            """,
+            (conversation_id,),
+        )
+        latest_customer = cursor.fetchone()
+        source_question = str(latest_customer[0]) if latest_customer else "Customer question"
+
+        status = "approved" if request.feedback_type == "correct" else "pending"
+        cursor.execute(
+            """
+            INSERT INTO ai_response_feedback (
+                owner_type, owner_id, conversation_id, message_id, feedback_type,
+                source_question, suggested_answer, status
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                owner_type,
+                owner_id,
+                conversation_id,
+                request.message_id,
+                request.feedback_type,
+                source_question,
+                (request.suggested_answer or "").strip() or None,
+                status,
+            ),
+        )
+        feedback_id = int(cursor.lastrowid)
+        conn.commit()
+
+    if request.feedback_type in {"needs_improvement", "incorrect"}:
+        _record_system_activity(
+            event_type="ai_training_suggestion",
+            message="New AI training suggestion pending admin approval",
+            actor_user_id=owner_id if owner_type == "web" else None,
+            metadata={"conversation_id": conversation_id, "feedback_id": feedback_id},
+        )
+
+    return {"ok": True, "feedback_id": feedback_id, "status": status}
+
+
+@app.get("/operations/training-suggestions")
+async def list_training_suggestions(
+    authorization: Optional[str] = Header(default=None),
+) -> dict[str, Any]:
+    owner_type, owner_id = _get_authenticated_actor(authorization)
+    _require_feature_access(
+        owner_type=owner_type,
+        owner_id=owner_id,
+        feature="ai_chat",
+    )
+
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT id, conversation_id, message_id, feedback_type, source_question,
+                   COALESCE(suggested_answer, '') AS suggested_answer, status, created_at
+            FROM ai_response_feedback
+            WHERE owner_type = ? AND owner_id = ?
+              AND feedback_type IN ('needs_improvement', 'incorrect')
+              AND status = 'pending'
+            ORDER BY id DESC
+            LIMIT 50
+            """,
+            (owner_type, owner_id),
+        )
+        rows = cursor.fetchall()
+
+    suggestions = [
+        {
+            "id": int(row["id"]),
+            "conversation_id": str(row["conversation_id"]),
+            "message_id": int(row["message_id"]) if row["message_id"] is not None else None,
+            "feedback_type": str(row["feedback_type"]),
+            "source_question": str(row["source_question"]),
+            "suggested_answer": str(row["suggested_answer"]),
+            "status": str(row["status"]),
+            "created_at": str(row["created_at"]),
+        }
+        for row in rows
+    ]
+    return {"ok": True, "suggestions": suggestions}
+
+
+@app.post("/operations/training-suggestions/{feedback_id}/approve")
+async def approve_training_suggestion(
+    feedback_id: int,
+    authorization: Optional[str] = Header(default=None),
+) -> dict[str, Any]:
+    owner_type, owner_id = _get_authenticated_actor(authorization)
+    _require_feature_access(
+        owner_type=owner_type,
+        owner_id=owner_id,
+        feature="ai_chat",
+    )
+
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT id, source_question, suggested_answer, status
+            FROM ai_response_feedback
+            WHERE id = ? AND owner_type = ? AND owner_id = ?
+            """,
+            (feedback_id, owner_type, owner_id),
+        )
+        row = cursor.fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Training suggestion not found")
+
+        if str(row["status"]) != "pending":
+            return {"ok": True, "feedback_id": feedback_id, "status": str(row["status"])}
+
+        suggested_answer = str(row["suggested_answer"] or "").strip()
+        if suggested_answer:
+            cursor.execute(
+                """
+                INSERT INTO ai_corrections (owner_type, owner_id, question, corrected_answer)
+                VALUES (?, ?, ?, ?)
+                """,
+                (owner_type, owner_id, str(row["source_question"]), suggested_answer),
+            )
+
+        cursor.execute(
+            """
+            UPDATE ai_response_feedback
+            SET status = 'approved'
+            WHERE id = ?
+            """,
+            (feedback_id,),
+        )
+        conn.commit()
+
+    return {"ok": True, "feedback_id": feedback_id, "status": "approved"}
+
+
+@app.get("/operations/notifications")
+async def get_smart_notifications(
+    authorization: Optional[str] = Header(default=None),
+) -> dict[str, Any]:
+    owner_type, owner_id = _get_authenticated_actor(authorization)
+    _require_feature_access(
+        owner_type=owner_type,
+        owner_id=owner_id,
+        feature="ai_chat",
+    )
+    return {"ok": True, "notifications": _build_notifications(owner_type, owner_id)}
+
+
+@app.post("/operations/conversations/{conversation_id}/takeover")
+async def toggle_takeover(
+    conversation_id: str,
+    request: Optional[TakeoverRequest] = None,
+    authorization: Optional[str] = Header(default=None),
+) -> dict[str, Any]:
+    owner_type, owner_id = _get_authenticated_actor(authorization)
+    _require_feature_access(
+        owner_type=owner_type,
+        owner_id=owner_id,
+        feature="ai_chat",
+    )
+
+    next_state = True if request is None else bool(request.active)
+
+    with sqlite3.connect(DB_PATH) as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            UPDATE monitored_conversations
+            SET taken_over = ?, unread_count = 0, updated_at = CURRENT_TIMESTAMP
+            WHERE id = ? AND owner_type = ? AND owner_id = ?
+            """,
+            (1 if next_state else 0, conversation_id, owner_type, owner_id),
         )
         conn.commit()
 
     if cursor.rowcount == 0:
         raise HTTPException(status_code=404, detail="Conversation not found")
 
-    return {"ok": True, "conversation_id": conversation_id, "taken_over": True}
+    return {"ok": True, "conversation_id": conversation_id, "taken_over": next_state}
 
 
 @app.post("/operations/conversations/{conversation_id}/reply")
@@ -2191,6 +2781,7 @@ async def get_knowledge_base(
         row = cursor.fetchone()
 
     if not row:
+        insights = _build_knowledge_insights(owner_type, owner_id)
         return {
             "ok": True,
             "knowledge_base": {
@@ -2201,8 +2792,10 @@ async def get_knowledge_base(
                 "pricing_information": "",
                 "faq": "",
             },
+            "insights": insights,
         }
 
+    insights = _build_knowledge_insights(owner_type, owner_id)
     return {
         "ok": True,
         "knowledge_base": {
@@ -2213,6 +2806,7 @@ async def get_knowledge_base(
             "pricing_information": row["pricing_information"] or "",
             "faq": row["faq"] or "",
         },
+        "insights": insights,
     }
 
 
@@ -2260,7 +2854,75 @@ async def save_knowledge_base(
         )
         conn.commit()
 
-    return {"ok": True}
+    if owner_type == "web":
+        account = _get_web_user_account(owner_id)
+        _record_system_activity(
+            event_type="knowledge_base_updated",
+            message=f"Knowledge base article added by {account['email']}",
+            actor_user_id=int(account["id"]),
+            actor_email=str(account["email"]),
+        )
+
+    return {"ok": True, "insights": _build_knowledge_insights(owner_type, owner_id)}
+
+
+@app.get("/operations/knowledge-base/insights")
+async def get_knowledge_base_insights(
+    authorization: Optional[str] = Header(default=None),
+) -> dict[str, Any]:
+    owner_type, owner_id = _get_authenticated_actor(authorization)
+    _require_feature_access(
+        owner_type=owner_type,
+        owner_id=owner_id,
+        feature="knowledge_base",
+    )
+    return {"ok": True, "insights": _build_knowledge_insights(owner_type, owner_id)}
+
+
+@app.post("/operations/knowledge-base/faq-suggestions/decision")
+async def decide_faq_suggestion(
+    request: FAQSuggestionDecisionRequest,
+    authorization: Optional[str] = Header(default=None),
+) -> dict[str, Any]:
+    owner_type, owner_id = _get_authenticated_actor(authorization)
+    _require_feature_access(
+        owner_type=owner_type,
+        owner_id=owner_id,
+        feature="knowledge_base",
+    )
+
+    if not request.approved:
+        return {"ok": True, "approved": False}
+
+    faq_append = f"Q: {request.question.strip()}\nA: {request.answer.strip()}"
+    with sqlite3.connect(DB_PATH) as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT COALESCE(faq, '')
+            FROM knowledge_base_entries
+            WHERE owner_type = ? AND owner_id = ?
+            """,
+            (owner_type, owner_id),
+        )
+        existing = cursor.fetchone()
+        current_faq = str(existing[0] if existing else "")
+        merged_faq = faq_append if not current_faq.strip() else f"{current_faq.strip()}\n\n{faq_append}"
+
+        cursor.execute(
+            """
+            INSERT INTO knowledge_base_entries (owner_type, owner_id, faq, updated_at)
+            VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(owner_type, owner_id)
+            DO UPDATE SET
+                faq = excluded.faq,
+                updated_at = CURRENT_TIMESTAMP
+            """,
+            (owner_type, owner_id, merged_faq),
+        )
+        conn.commit()
+
+    return {"ok": True, "approved": True, "insights": _build_knowledge_insights(owner_type, owner_id)}
 
 
 @app.get("/operations/ai-employees")
@@ -2279,7 +2941,19 @@ async def list_ai_employees(
         cursor = conn.cursor()
         cursor.execute(
             """
-            SELECT id, name, role, language, tone, COALESCE(knowledge_base_reference, '') AS knowledge_base_reference, is_active
+            SELECT
+                id,
+                name,
+                role,
+                language,
+                tone,
+                COALESCE(knowledge_base_reference, '') AS knowledge_base_reference,
+                COALESCE(communication_style, 'Professional') AS communication_style,
+                COALESCE(response_length, 'Medium') AS response_length,
+                COALESCE(response_tone, 'Balanced') AS response_tone,
+                COALESCE(response_speed_priority, 'Balanced') AS response_speed_priority,
+                COALESCE(context_memory_depth, 10) AS context_memory_depth,
+                is_active
             FROM ai_employee_configs
             WHERE owner_type = ? AND owner_id = ?
             ORDER BY id DESC
@@ -2296,6 +2970,11 @@ async def list_ai_employees(
             "language": str(row["language"]),
             "tone": str(row["tone"]),
             "knowledge_base_reference": str(row["knowledge_base_reference"]),
+            "communication_style": str(row["communication_style"]),
+            "response_length": str(row["response_length"]),
+            "response_tone": str(row["response_tone"]),
+            "response_speed_priority": str(row["response_speed_priority"]),
+            "context_memory_depth": int(row["context_memory_depth"]),
             "is_active": bool(row["is_active"]),
         }
         for row in rows
@@ -2321,9 +3000,11 @@ async def create_ai_employee(
         cursor.execute(
             """
             INSERT INTO ai_employee_configs (
-                owner_type, owner_id, name, role, language, tone, knowledge_base_reference, updated_at
+                owner_type, owner_id, name, role, language, tone, knowledge_base_reference,
+                communication_style, response_length, response_tone, response_speed_priority,
+                context_memory_depth, updated_at
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
             """,
             (
                 owner_type,
@@ -2333,6 +3014,11 @@ async def create_ai_employee(
                 request.language,
                 request.tone.strip(),
                 (request.knowledge_base_reference or "").strip() or None,
+                (request.communication_style or "Professional").strip(),
+                (request.response_length or "Medium").strip(),
+                (request.response_tone or request.tone or "Balanced").strip(),
+                (request.response_speed_priority or "Balanced").strip(),
+                int(request.context_memory_depth or 10),
             ),
         )
         employee_id = int(cursor.lastrowid)
@@ -2382,6 +3068,16 @@ async def get_operations_analytics(
         cursor.execute(
             """
             SELECT COUNT(*)
+            FROM monitored_conversations
+            WHERE owner_type = ? AND owner_id = ? AND date(last_timestamp) = date('now')
+            """,
+            (owner_type, owner_id),
+        )
+        daily_conversations = int(cursor.fetchone()[0])
+
+        cursor.execute(
+            """
+            SELECT COUNT(*)
             FROM ai_employee_configs
             WHERE owner_type = ? AND owner_id = ? AND is_active = 1
             """,
@@ -2413,6 +3109,7 @@ async def get_operations_analytics(
 
         avg_confidence = float(stats_row["avg_confidence"] or 0.74)
         average_response_seconds = max(10, int((1 - min(avg_confidence, 1.0)) * 90))
+        human_takeover_rate = int((human_count / total_handled) * 100) if total_handled else 0
 
         cursor.execute(
             """
@@ -2430,6 +3127,22 @@ async def get_operations_analytics(
 
         cursor.execute(
             """
+            SELECT date(mm.created_at) AS day,
+                   SUM(CASE WHEN mm.sender_type = 'ai' THEN 1 ELSE 0 END) AS ai_count,
+                   SUM(CASE WHEN mm.sender_type = 'human' THEN 1 ELSE 0 END) AS human_count
+            FROM monitored_messages mm
+            JOIN monitored_conversations mc ON mc.id = mm.conversation_id
+            WHERE mc.owner_type = ? AND mc.owner_id = ?
+            GROUP BY date(mm.created_at)
+            ORDER BY day DESC
+            LIMIT 7
+            """,
+            (owner_type, owner_id),
+        )
+        success_rows = list(reversed(cursor.fetchall()))
+
+        cursor.execute(
+            """
             SELECT content, COUNT(*) AS cnt
             FROM monitored_messages mm
             JOIN monitored_conversations mc ON mc.id = mm.conversation_id
@@ -2442,6 +3155,29 @@ async def get_operations_analytics(
         )
         top_questions_rows = cursor.fetchall()
 
+        cursor.execute(
+            """
+            SELECT COUNT(*)
+            FROM monitored_conversations
+            WHERE owner_type = ? AND owner_id = ?
+              AND strftime('%Y-%m', last_timestamp) = strftime('%Y-%m', 'now')
+            """,
+            (owner_type, owner_id),
+        )
+        conversations_this_month = int(cursor.fetchone()[0])
+
+        cursor.execute(
+            """
+            SELECT SUM(LENGTH(content))
+            FROM monitored_messages mm
+            JOIN monitored_conversations mc ON mc.id = mm.conversation_id
+            WHERE mc.owner_type = ? AND mc.owner_id = ? AND mm.sender_type = 'ai'
+              AND strftime('%Y-%m', mm.created_at) = strftime('%Y-%m', 'now')
+            """,
+            (owner_type, owner_id),
+        )
+        ai_chars_month = int(cursor.fetchone()[0] or 0)
+
     messages_per_day = [
         {"day": str(row["day"]), "count": int(row["count"])} for row in by_day_rows
     ]
@@ -2452,6 +3188,19 @@ async def get_operations_analytics(
     top_questions = [
         {"question": str(row["content"]), "count": int(row["cnt"])} for row in top_questions_rows
     ]
+    automation_success_rate_over_time = []
+    human_takeover_analysis = []
+    for row in success_rows:
+        ai_day = int(row["ai_count"] or 0)
+        human_day = int(row["human_count"] or 0)
+        total_day = ai_day + human_day
+        success_rate = int((ai_day / total_day) * 100) if total_day else 0
+        automation_success_rate_over_time.append({"day": str(row["day"]), "rate": success_rate})
+        human_takeover_analysis.append({"day": str(row["day"]), "count": human_day})
+
+    conversation_volume_trends = messages_per_day
+    estimated_tokens = int(ai_chars_month / 4)
+    estimated_cost = round((estimated_tokens / 1_000_000) * 2.0, 2)
 
     return {
         "ok": True,
@@ -2460,11 +3209,21 @@ async def get_operations_analytics(
             "active_ai_employees": active_employees,
             "automation_rate": automation_rate,
             "average_response_time_seconds": average_response_seconds,
+            "human_takeover_rate": human_takeover_rate,
+            "daily_conversations": daily_conversations,
+        },
+        "usage": {
+            "conversations_this_month": conversations_this_month,
+            "tokens_used": estimated_tokens,
+            "estimated_cost_usd": estimated_cost,
         },
         "charts": {
             "messages_per_day": messages_per_day,
             "ai_vs_human": ai_vs_human,
             "top_customer_questions": top_questions,
+            "automation_success_rate_over_time": automation_success_rate_over_time,
+            "conversation_volume_trends": conversation_volume_trends,
+            "human_takeover_analysis": human_takeover_analysis,
         },
     }
 
@@ -2691,11 +3450,18 @@ async def ai_chat(
         feature="ai_chat",
     )
 
+    selected_employee = _pick_ai_employee(owner_type, owner_id, message_text)
+
     ai_text, ai_confidence = _generate_trained_ai_response(
         owner_type=owner_type,
         owner_id=owner_id,
         message_text=message_text,
         language=request.language,
+    )
+    ai_text = _shape_response_text(
+        ai_text,
+        str(selected_employee.get("response_length", "Medium")),
+        str(selected_employee.get("response_speed_priority", "Balanced")),
     )
 
     now = time.strftime("%Y-%m-%d %H:%M:%S")
@@ -2757,9 +3523,9 @@ async def ai_chat(
             """
             INSERT OR IGNORE INTO monitored_conversations (
                 id, owner_type, owner_id, customer_handle, customer_name,
-                last_message, last_timestamp, unread_count, taken_over
+                last_message, last_timestamp, unread_count, taken_over, assigned_employee_id
             )
-            VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, 0, 0)
+            VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, 0, 0, ?)
             """,
             (
                 conversation_id,
@@ -2768,6 +3534,7 @@ async def ai_chat(
                 "@customer",
                 "Telegram Customer",
                 message_text,
+                selected_employee.get("id"),
             ),
         )
         cursor.execute(
@@ -2787,14 +3554,20 @@ async def ai_chat(
         cursor.execute(
             """
             UPDATE monitored_conversations
-            SET last_message = ?, last_timestamp = CURRENT_TIMESTAMP, unread_count = unread_count + 1, updated_at = CURRENT_TIMESTAMP
+            SET last_message = ?, last_timestamp = CURRENT_TIMESTAMP, unread_count = unread_count + 1,
+                assigned_employee_id = COALESCE(assigned_employee_id, ?), updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
             """,
-            (message_text, conversation_id),
+            (message_text, selected_employee.get("id"), conversation_id),
         )
         conn.commit()
 
     return {
         "reply": ai_text,
         "conversation_id": conversation_id,
+        "assigned_employee": {
+            "id": selected_employee.get("id"),
+            "name": selected_employee.get("name"),
+            "role": selected_employee.get("role"),
+        },
     }

@@ -1,0 +1,1 @@
+muhammadziyo     29449   0.3  0.4 444685280 103744 s134  S+    9:11AM   0:00.18 node scripts/sync-locales.mjs

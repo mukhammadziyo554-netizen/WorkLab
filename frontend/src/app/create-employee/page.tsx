@@ -14,9 +14,14 @@ export default function CreateEmployeePage() {
     businessName: "",
     businessDescription: "",
     faq: "",
+    communicationStyle: "professional",
+    responseLength: "medium",
+    responseTone: "balanced",
+    responseSpeedPriority: "balanced",
+    contextMemoryDepth: "10",
   });
 
-  const onChange = (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const onChange = (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = event.target;
     setForm({ ...form, [name]: value });
   };
@@ -80,6 +85,80 @@ export default function CreateEmployeePage() {
               placeholder={t.createEmployee.faqPlaceholder}
               required
             />
+
+            <div className="grid gap-4 md:grid-cols-3">
+              <label>
+                <p className="mb-1.5 text-sm text-slate-200">{t.createEmployee.communicationStyleLabel}</p>
+                <select
+                  name="communicationStyle"
+                  value={form.communicationStyle}
+                  onChange={onChange}
+                  className="h-11 w-full rounded-xl border border-white/15 bg-white/5 px-3 text-sm text-white focus:border-cyan-300/60 focus:outline-none"
+                >
+                  <option value="professional" className="bg-slate-900">{t.createEmployee.communicationStyleOptions.professional}</option>
+                  <option value="friendly" className="bg-slate-900">{t.createEmployee.communicationStyleOptions.friendly}</option>
+                  <option value="salesAssistant" className="bg-slate-900">{t.createEmployee.communicationStyleOptions.salesAssistant}</option>
+                  <option value="technicalSupport" className="bg-slate-900">{t.createEmployee.communicationStyleOptions.technicalSupport}</option>
+                  <option value="minimal" className="bg-slate-900">{t.createEmployee.communicationStyleOptions.minimal}</option>
+                </select>
+              </label>
+
+              <label>
+                <p className="mb-1.5 text-sm text-slate-200">{t.createEmployee.responseLengthLabel}</p>
+                <select
+                  name="responseLength"
+                  value={form.responseLength}
+                  onChange={onChange}
+                  className="h-11 w-full rounded-xl border border-white/15 bg-white/5 px-3 text-sm text-white focus:border-cyan-300/60 focus:outline-none"
+                >
+                  <option value="short" className="bg-slate-900">{t.createEmployee.responseLengthOptions.short}</option>
+                  <option value="medium" className="bg-slate-900">{t.createEmployee.responseLengthOptions.medium}</option>
+                  <option value="detailed" className="bg-slate-900">{t.createEmployee.responseLengthOptions.detailed}</option>
+                </select>
+              </label>
+
+              <label>
+                <p className="mb-1.5 text-sm text-slate-200">{t.createEmployee.responseToneLabel}</p>
+                <select
+                  name="responseTone"
+                  value={form.responseTone}
+                  onChange={onChange}
+                  className="h-11 w-full rounded-xl border border-white/15 bg-white/5 px-3 text-sm text-white focus:border-cyan-300/60 focus:outline-none"
+                >
+                  <option value="formal" className="bg-slate-900">{t.createEmployee.responseToneOptions.formal}</option>
+                  <option value="casual" className="bg-slate-900">{t.createEmployee.responseToneOptions.casual}</option>
+                  <option value="balanced" className="bg-slate-900">{t.createEmployee.responseToneOptions.balanced}</option>
+                </select>
+              </label>
+
+              <label>
+                <p className="mb-1.5 text-sm text-slate-200">{t.createEmployee.responseSpeedPriorityLabel}</p>
+                <select
+                  name="responseSpeedPriority"
+                  value={form.responseSpeedPriority}
+                  onChange={onChange}
+                  className="h-11 w-full rounded-xl border border-white/15 bg-white/5 px-3 text-sm text-white focus:border-cyan-300/60 focus:outline-none"
+                >
+                  <option value="fast" className="bg-slate-900">{t.createEmployee.responseSpeedPriorityOptions.fast}</option>
+                  <option value="balanced" className="bg-slate-900">{t.createEmployee.responseSpeedPriorityOptions.balanced}</option>
+                  <option value="thoughtful" className="bg-slate-900">{t.createEmployee.responseSpeedPriorityOptions.thoughtful}</option>
+                </select>
+              </label>
+
+              <label>
+                <p className="mb-1.5 text-sm text-slate-200">{t.createEmployee.contextMemoryDepthLabel}</p>
+                <select
+                  name="contextMemoryDepth"
+                  value={form.contextMemoryDepth}
+                  onChange={onChange}
+                  className="h-11 w-full rounded-xl border border-white/15 bg-white/5 px-3 text-sm text-white focus:border-cyan-300/60 focus:outline-none"
+                >
+                  <option value="3" className="bg-slate-900">{t.createEmployee.contextMemoryDepthOptions.depth3}</option>
+                  <option value="10" className="bg-slate-900">{t.createEmployee.contextMemoryDepthOptions.depth10}</option>
+                  <option value="50" className="bg-slate-900">{t.createEmployee.contextMemoryDepthOptions.depth50}</option>
+                </select>
+              </label>
+            </div>
 
             <button
               type="submit"

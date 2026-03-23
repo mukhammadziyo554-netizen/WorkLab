@@ -27,6 +27,31 @@ npm install
 npm run dev
 ```
 
+## Stable Local Startup (Recommended)
+
+Use the helper scripts below to avoid duplicate processes and port conflicts.
+
+```bash
+cd /Users/muhammadziyo/WorkLab
+./scripts/dev-start.sh
+```
+
+Check status:
+
+```bash
+cd /Users/muhammadziyo/WorkLab
+./scripts/dev-status.sh
+```
+
+Stop both services:
+
+```bash
+cd /Users/muhammadziyo/WorkLab
+./scripts/dev-stop.sh
+```
+
+Logs are written to `.dev/backend.log` and `.dev/frontend.log`.
+
 Production mode:
 
 ```bash
@@ -40,8 +65,20 @@ npm start
 
 ```bash
 cd backend
-python3 -m uvicorn main:app --host 0.0.0.0 --port 8000
+python3 run_backend.py
 ```
+
+This command uses a lightweight supervisor that:
+- keeps a single backend instance lock,
+- starts FastAPI with the correct app directory,
+- restarts automatically if the backend process crashes.
+
+Optional environment variables:
+- `BACKEND_HOST` (default `127.0.0.1`)
+- `BACKEND_PORT` (default `8000`)
+- `BACKEND_RELOAD` (`1` enables uvicorn reload)
+- `BACKEND_RESTART_DELAY_SEC` (default `2.0`)
+- `BACKEND_MAX_RESTART_DELAY_SEC` (default `8.0`)
 
 ## Run Telegram Bot (From This Folder)
 
@@ -61,6 +98,16 @@ Bot behavior:
 - Frontend and backend run independently.
 - Frontend communicates with backend through HTTP APIs.
 - Backend handles Telegram communication, AI processing, and database persistence.
+
+## Internationalization (EN/RU/UZ)
+
+- Locale dictionaries are centralized under `frontend/src/locales`:
+	- `en.json`
+	- `ru.json`
+	- `uz.json`
+- Active language is managed by `LanguageProvider` and persisted in localStorage key `language`.
+- Missing keys automatically fall back to English (`en.json`).
+- Language switching is dynamic (no page reload), including Telegram Mini App pages.
 
 ## Deployment (GitHub -> Vercel + Backend)
 
@@ -157,3 +204,77 @@ Use URL-based integration only. No shared files are required between projects.
 	- `BACKEND_WEBHOOK_URL` (optional, defaults to `APP_PUBLIC_URL/telegram/webhook`)
 - Frontend:
 	- `NEXT_PUBLIC_BACKEND_URL` for API calls (for example `https://api.worklab.uz`)
+
+## Production Deployment Guide
+
+For 24/7 production deployment without ngrok or local development servers:
+
+### Quick Start (30 minutes)
+
+See [QUICK_START_PRODUCTION.md](./QUICK_START_PRODUCTION.md) for a minimal setup guide.
+
+### Full Production Documentation
+
+Complete deployment guide with VPS setup, SSL configuration, monitoring, and troubleshooting:
+
+- **[DEPLOYMENT.md](./DEPLOYMENT.md)** - Complete production deployment guide
+- **[DEPLOYMENT_CHECKLIST.md](./DEPLOYMENT_CHECKLIST.md)** - Pre-deployment verification checklist
+
+### Deployment Architecture
+
+```
+yourdomain.com
+    ├── Frontend: app.yourdomain.com → Vercel (or VPS)
+    ├── Backend API: api.yourdomain.com → VPS:8000
+    │   └── Telegram Webhook: /telegram/webhook
+    └── Telegram: Webhook mode (no polling)
+```
+
+### Key Files for Production
+
+- **Backend**: `ecosystem.config.js` - PM2 process management
+- **Docker**: `Dockerfile.backend` - Container image for backend
+- **Docker Compose**: `docker-compose.yml` - Complete stack with Docker
+- **Systemd**: `worklab-backend.service` - Alternative systemd service
+- **Nginx**: `nginx.conf.example` - Reverse proxy configuration
+- **Env Templates**:
+  - `backend/.env.production.example` - Production environment variables
+  - `backend/.env.example` - Development environment variables
+  - `frontend/.env.example` - Frontend environment variables
+
+### Deployment Options
+
+1. **Vercel + VPS**  (Recommended)
+   - Frontend on Vercel  (auto-scaling, fast CDN)
+   - Backend on VPS with PM2 (simple, full control)
+   - See [DEPLOYMENT.md](./DEPLOYMENT.md)
+
+2. **Docker + VPS**
+   - Containerized backend for easy deployment
+   - See `docker-compose.yml`
+
+3. **Systemd + VPS**
+   - Traditional systemd service  for long-term reliability
+   - See `worklab-backend.service`
+
+### Health Check
+
+Once deployed, verify your setup:
+
+```bash
+# Backend health
+curl https://api.yourdomain.com/health
+
+# Frontend health (if on VPS)
+curl https://yourdomain.com
+
+# Telegram webhook status
+curl "https://api.telegram.org/bot{TOKEN}/getWebhookInfo"
+```
+
+### Support
+
+For deployment questions, refer to:
+- [DEPLOYMENT.md](./DEPLOYMENT.md) - Detailed deployment guide
+- [DEPLOYMENT_CHECKLIST.md](./DEPLOYMENT_CHECKLIST.md) - Verification checklist
+- [QUICK_START_PRODUCTION.md](./QUICK_START_PRODUCTION.md) - Fast setup

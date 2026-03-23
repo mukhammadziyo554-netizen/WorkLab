@@ -7,6 +7,7 @@ import { useLanguage } from "../../components/providers/LanguageProvider";
 import FormInput from "../../components/ui/FormInput";
 import LanguageSwitcher from "../../components/ui/LanguageSwitcher";
 import { getApiHeaders, getBackendBaseUrl, getBackendConnectionErrorMessage } from "../../lib/backend";
+import { setSessionToken } from "../../lib/session";
 
 type AuthMode = "login" | "signup";
 type AuthResponse = {
@@ -159,7 +160,7 @@ export default function LoginPage() {
           return;
         }
 
-        window.localStorage.setItem("worklab_session_token", data.token);
+        setSessionToken(data.token);
         setSuccessMessage(mode === "signup" ? "Account created successfully." : "Logged in successfully.");
         router.push("/dashboard");
       } catch {

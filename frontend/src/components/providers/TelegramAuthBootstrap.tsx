@@ -3,6 +3,7 @@
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { getApiHeaders, getBackendBaseUrl, getBackendConnectionErrorMessage } from "../../lib/backend";
+import { setSessionToken, syncSessionCookieFromStorage } from "../../lib/session";
 
 type TelegramAuthPayload = {
   init_data?: string;
@@ -41,6 +42,26 @@ export default function TelegramAuthBootstrap() {
   const [fallbackMessage, setFallbackMessage] = useState<string | null>(null);
 
   useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const isTelegramClient = /Telegram/i.test(window.navigator.userAgent);
+    const hasTelegramWebApp = Boolean(window.Telegram?.WebApp);
+
+    if (!isTelegramClient && !hasTelegramWebApp) {
+      return;
+    }
+
+    const root = document.documentElement;
+    root.classList.add("telegram-mini-app");
+
+    return () => {
+      root.classList.remove("telegram-mini-app");
+    };
+  }, []);
+
+  useEffect(() => {
     if (hasAttemptedAuth.current) {
       return;
     }
@@ -50,6 +71,7 @@ export default function TelegramAuthBootstrap() {
     }
 
     if (window.localStorage.getItem(SESSION_KEY)) {
+      syncSessionCookieFromStorage();
       return;
     }
 
@@ -88,7 +110,7 @@ export default function TelegramAuthBootstrap() {
         }
 
         setFallbackMessage(null);
-        window.localStorage.setItem(SESSION_KEY, data.token);
+        setSessionToken(data.token);
         hasAttemptedAuth.current = true;
 
         if (pathname !== "/dashboard") {

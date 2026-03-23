@@ -1,75 +1,56 @@
 "use client";
 
+import { useState } from "react";
 import { useLanguage } from "../../components/providers/LanguageProvider";
 import BackButton from "../../components/ui/BackButton";
 import LanguageSwitcher from "../../components/ui/LanguageSwitcher";
 import Sidebar from "../../components/ui/Sidebar";
-
-const botFileSnippet = `# backend/telegram_bot.py
-from dataclasses import dataclass
-from typing import Any
-
-@dataclass
-class IncomingTelegramMessage:
-    chat_id: int
-    text: str
-    update_id: int | None = None
-
-# parse_telegram_update(...)
-# build_send_message_payload(...)
-# build_set_webhook_request(...)`;
-
-const webhookSnippet = `# backend/main.py
-@app.post("/telegram/webhook")
-async def receive_telegram_webhook(update: dict[str, Any]) -> dict[str, Any]:
-    incoming = parse_telegram_update(update)
-    if incoming is None:
-        return {"ok": True, "status": "ignored"}
-
-    ai_result = generate_ai_response(incoming.text)
-    reply_payload = build_send_message_payload(incoming.chat_id, ai_result.text)
-    return {"ok": True, "status": "processed", "telegram_send_payload": reply_payload}`;
-
-const aiSnippet = `# backend/ai_agent.py
-def generate_ai_response(message_text: str) -> AIResponse:
-    normalized = message_text.strip().lower()
-    if "deliver" in normalized or "delivery" in normalized:
-        return AIResponse(text="Yes, delivery takes 2-3 days and costs 30,000 UZS.", confidence=0.72)
-
-    return AIResponse(text="Thanks for your message. I am your WorkLab AI employee.", confidence=0.45)`;
+import { getApiHeaders, getBackendBaseUrl } from "../../lib/backend";
 
 export default function TelegramBotPage() {
-  const { language, t } = useLanguage();
+  const { t } = useLanguage();
+  const [step, setStep] = useState(1);
+  const [botToken, setBotToken] = useState("");
+  const [knowledgeBase, setKnowledgeBase] = useState("Main KB");
+  const [statusText, setStatusText] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const copy = {
-    en: {
-      tag: "Telegram Integration",
-      title: "Telegram Bot Code",
-      subtitle: "This page contains the dedicated Python backend files and endpoints used for Telegram bot processing.",
-      section1: "Bot Parser and Payload Builder",
-      section2: "Webhook Receiver Endpoint",
-      section3: "AI Response Placeholder",
-      note: "Source files live in backend and are ready for real Telegram API calls.",
-    },
-    ru: {
-      tag: "Интеграция Telegram",
-      title: "Код Telegram бота",
-      subtitle: "На этой странице показаны отдельные Python файлы и endpoint-ы backend для обработки Telegram бота.",
-      section1: "Парсер бота и сборка payload",
-      section2: "Endpoint приема webhook",
-      section3: "Заглушка AI ответа",
-      note: "Исходные файлы находятся в backend и готовы для подключения реальных вызовов Telegram API.",
-    },
-    uz: {
-      tag: "Telegram integratsiyasi",
-      title: "Telegram bot kodi",
-      subtitle: "Bu sahifada Telegram botini qayta ishlash uchun ishlatiladigan alohida Python backend fayllari va endpointlar ko'rsatilgan.",
-      section1: "Bot parseri va payload yig'ish",
-      section2: "Webhook qabul qilish endpointi",
-      section3: "AI javob uchun vaqtinchalik funksiya",
-      note: "Asl fayllar backend papkasida joylashgan va haqiqiy Telegram API chaqiruvlari uchun tayyor.",
-    },
-  }[language];
+  const connectBot = async () => {
+    const sessionToken = window.localStorage.getItem("worklab_session_token");
+    const backendBaseUrl = getBackendBaseUrl();
+    if (!sessionToken || !backendBaseUrl) {
+      setStatusText(t.telegramWizard.loginRequired);
+      return;
+    }
+
+    setIsSubmitting(true);
+    setStatusText(null);
+    try {
+      const response = await fetch(`${backendBaseUrl}/telegram/webhook/configure`, {
+        method: "POST",
+        headers: getApiHeaders({
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${sessionToken}`,
+        }),
+        body: JSON.stringify({
+          bot_token: botToken.trim(),
+          webhook_url: `${window.location.origin}/api/telegram/webhook`,
+        }),
+      });
+
+      if (!response.ok) {
+        setStatusText(t.telegramWizard.configureFailed);
+        return;
+      }
+
+      setStatusText(t.telegramWizard.configured.replace("{knowledgeBase}", knowledgeBase));
+      setStep(4);
+    } catch {
+      setStatusText(t.telegramWizard.connectionFailed);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="animate-fade-in min-h-screen bg-[#05070f] text-slate-100 md:flex">
@@ -85,34 +66,97 @@ export default function TelegramBotPage() {
             <BackButton label={t.nav.back} />
           </div>
 
-          <p className="text-xs uppercase tracking-[0.18em] text-cyan-200">{copy.tag}</p>
-          <h1 className="mt-3 text-4xl font-bold tracking-tight text-white">{copy.title}</h1>
-          <p className="mt-4 text-base leading-7 text-slate-300">{copy.subtitle}</p>
+          <p className="text-xs uppercase tracking-[0.18em] text-cyan-200">{t.telegramWizard.tag}</p>
+          <h1 className="mt-3 text-4xl font-bold tracking-tight text-white">{t.telegramWizard.title}</h1>
+          <p className="mt-4 text-base leading-7 text-slate-300">{t.telegramWizard.subtitle}</p>
 
-          <div className="mt-8 grid gap-6">
-            <article className="rounded-xl border border-white/10 bg-[#0c1224]/80 p-5">
-              <h2 className="mb-3 text-lg font-semibold text-white">{copy.section1}</h2>
-              <pre className="overflow-x-auto rounded-lg bg-[#0a0f1d] p-4 text-xs leading-6 text-cyan-100">
-                <code>{botFileSnippet}</code>
-              </pre>
-            </article>
+          <div className="mt-8 rounded-xl border border-white/10 bg-[#0c1224]/80 p-5">
+            <div className="mb-5 grid gap-2 sm:grid-cols-4">
+              {t.telegramWizard.steps.map((label, index) => {
+                const indexStep = index + 1;
+                const active = indexStep <= step;
+                return (
+                  <div key={label} className={`rounded-lg border px-3 py-2 text-xs ${active ? "border-cyan-300/40 bg-cyan-300/12 text-cyan-100" : "border-white/10 bg-white/5 text-slate-400"}`}>
+                    <p className="font-semibold">{t.telegramWizard.step} {indexStep}</p>
+                    <p className="mt-1">{label}</p>
+                  </div>
+                );
+              })}
+            </div>
 
-            <article className="rounded-xl border border-white/10 bg-[#0c1224]/80 p-5">
-              <h2 className="mb-3 text-lg font-semibold text-white">{copy.section2}</h2>
-              <pre className="overflow-x-auto rounded-lg bg-[#0a0f1d] p-4 text-xs leading-6 text-cyan-100">
-                <code>{webhookSnippet}</code>
-              </pre>
-            </article>
+            <div className="space-y-4">
+              {step === 1 ? (
+                <div>
+                  <p className="text-sm text-slate-200">{t.telegramWizard.step1Description}</p>
+                  <button
+                    type="button"
+                    onClick={() => setStep(2)}
+                    className="button-pop mt-4 rounded-lg bg-cyan-300 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-200"
+                  >
+                    {t.telegramWizard.createdBot}
+                  </button>
+                </div>
+              ) : null}
 
-            <article className="rounded-xl border border-white/10 bg-[#0c1224]/80 p-5">
-              <h2 className="mb-3 text-lg font-semibold text-white">{copy.section3}</h2>
-              <pre className="overflow-x-auto rounded-lg bg-[#0a0f1d] p-4 text-xs leading-6 text-cyan-100">
-                <code>{aiSnippet}</code>
-              </pre>
-            </article>
+              {step === 2 ? (
+                <div>
+                  <label>
+                    <p className="mb-1 text-sm text-slate-200">{t.telegramWizard.step2Label}</p>
+                    <input
+                      value={botToken}
+                      onChange={(event) => setBotToken(event.target.value)}
+                      placeholder="123456:ABC..."
+                      className="h-11 w-full rounded-xl border border-white/15 bg-white/5 px-3 text-sm text-white focus:border-cyan-300/60 focus:outline-none"
+                    />
+                  </label>
+                  <div className="mt-3 flex items-center gap-2">
+                    <button type="button" onClick={() => setStep(1)} className="rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-xs text-slate-200">{t.telegramWizard.back}</button>
+                    <button
+                      type="button"
+                      onClick={() => setStep(3)}
+                      disabled={!botToken.trim()}
+                      className="button-pop rounded-lg bg-cyan-300 px-3 py-2 text-xs font-semibold text-slate-950 transition hover:bg-cyan-200 disabled:opacity-40"
+                    >
+                      {t.telegramWizard.continue}
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+
+              {step === 3 ? (
+                <div>
+                  <label>
+                    <p className="mb-1 text-sm text-slate-200">{t.telegramWizard.step3Label}</p>
+                    <input
+                      value={knowledgeBase}
+                      onChange={(event) => setKnowledgeBase(event.target.value)}
+                      className="h-11 w-full rounded-xl border border-white/15 bg-white/5 px-3 text-sm text-white focus:border-cyan-300/60 focus:outline-none"
+                    />
+                  </label>
+                  <div className="mt-3 flex items-center gap-2">
+                    <button type="button" onClick={() => setStep(2)} className="rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-xs text-slate-200">{t.telegramWizard.back}</button>
+                    <button
+                      type="button"
+                      onClick={connectBot}
+                      disabled={isSubmitting}
+                      className="button-pop rounded-lg bg-cyan-300 px-3 py-2 text-xs font-semibold text-slate-950 transition hover:bg-cyan-200 disabled:opacity-40"
+                    >
+                      {isSubmitting ? t.telegramWizard.connecting : t.telegramWizard.launch}
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+
+              {step === 4 ? (
+                <div className="rounded-lg border border-emerald-300/30 bg-emerald-400/10 p-3 text-sm text-emerald-100">
+                  {t.telegramWizard.step4Complete}
+                </div>
+              ) : null}
+            </div>
           </div>
 
-          <p className="mt-6 text-sm text-slate-400">{copy.note}</p>
+          {statusText ? <p className="mt-4 text-sm text-cyan-100">{statusText}</p> : null}
+          <p className="mt-6 text-sm text-slate-400">{t.telegramWizard.note}</p>
         </section>
       </main>
     </div>

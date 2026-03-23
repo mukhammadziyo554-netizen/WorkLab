@@ -21,7 +21,8 @@ type LanguageContextValue = {
   t: AppTranslations;
 };
 
-const STORAGE_KEY = "worklab-language";
+const ACTIVE_STORAGE_KEY = "language";
+const LEGACY_STORAGE_KEY = "worklab-language";
 
 const LanguageContext = createContext<LanguageContextValue | null>(null);
 
@@ -29,14 +30,17 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const [language, setLanguage] = useState<Language>(defaultLanguage);
 
   useEffect(() => {
-    const stored = window.localStorage.getItem(STORAGE_KEY);
+    const stored =
+      window.localStorage.getItem(ACTIVE_STORAGE_KEY) ||
+      window.localStorage.getItem(LEGACY_STORAGE_KEY);
     if (stored === "en" || stored === "ru" || stored === "uz") {
       setLanguage(stored);
     }
   }, []);
 
   useEffect(() => {
-    window.localStorage.setItem(STORAGE_KEY, language);
+    window.localStorage.setItem(ACTIVE_STORAGE_KEY, language);
+    window.localStorage.setItem(LEGACY_STORAGE_KEY, language);
     document.documentElement.lang = language;
   }, [language]);
 

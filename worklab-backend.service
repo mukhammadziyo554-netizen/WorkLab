@@ -1,0 +1,30 @@
+[Unit]
+Description=WorkLab Backend API Service
+After=network.target
+
+[Service]
+Type=simple
+User=worklab
+WorkingDirectory=/opt/worklab/backend
+Environment="PATH=/opt/worklab/venv/bin"
+EnvironmentFile=/opt/worklab/backend/.env
+
+# Run the backend with uvicorn
+ExecStart=/opt/worklab/venv/bin/python -m uvicorn main:app --host 0.0.0.0 --port 8000 --workers 4
+
+# Auto-restart on failure
+Restart=always
+RestartSec=10
+
+# Use a private temp directory
+PrivateTmp=yes
+
+# Security hardening
+NoNewPrivileges=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/var/lib/worklab /var/log/worklab
+
+[Install]
+WantedBy=multi-user.target

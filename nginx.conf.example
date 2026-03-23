@@ -1,0 +1,131 @@
+# ============================================================================
+# NGINX CONFIGURATION - Main Site with SSL
+# ============================================================================
+# 
+# Installation:
+#   1. Copy this to: /etc/nginx/sites-available/worklab
+#   2. Enable it: sudo ln -s /etc/nginx/sites-available/worklab /etc/nginx/sites-enabled/
+#   3. Test config: sudo nginx -t
+#   4. Reload: sudo systemctl reload nginx
+#
+# SSL Setup with Let's Encrypt (Certbot):
+#   sudo certbot certonly --nginx -d yourdomain.com -d api.yourdomain.com -d app.yourdomain.com
+#
+# ============================================================================
+
+# Redirect HTTP to HTTPS
+server {
+    listen 80;
+    listen [::]:80;
+    server_name yourdomain.com api.yourdomain.com app.yourdomain.com;
+
+    # Allow Let's Encrypt renewal
+    location /.well-known/acme-challenge/ {
+        root /var/www/letsencrypt;
+    }
+
+    # Redirect all other traffic to HTTPS
+    location / {
+        return 301 https://$server_name$request_uri;
+    }
+}
+
+# ============================================================================
+# HTTPS - API Server (Backend)
+# ============================================================================
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name api.yourdomain.com;
+
+    # === SSL Configuration ===
+    ssl_certificate /etc/letsencrypt/live/yourdomain.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/yourdomain.com/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+    ssl_prefer_server_ciphers on;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 10m;
+
+    # === Security Headers ===
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header Referrer-Policy "no-referrer-when-downgrade" always;
+    add_header Content-Security-Policy "default-src 'self' http: https: data: blob: 'unsafe-inline'" always;
+
+    # === Logging ===
+    access_log /var/log/nginx/worklab-access.log;
+    error_log /var/log/nginx/worklab-error.log;
+
+    # === Performance ===
+    client_max_body_size 10M;
+    gzip on;
+    gzip_types text/plain text/css text/javascript application/json;
+    gzip_min_length 1000;
+
+    # === Root Health Check (simple endpoint) ===
+    location = / {
+        access_log off;
+        return 200 "WorkLab API v1\n";
+        add_header Content-Type text/plain;
+    }
+
+    # === Backend API Proxy ===
+    location / {
+        proxy_pass http://127.0.0.1:8000;
+        
+        # === Proxy Headers ===
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $server_name;
+        
+        # === WebSocket Support (for future real-time features) ===
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        
+        # === Timeouts ===
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+        
+        # === Buffering ===
+        proxy_buffering on;
+        proxy_buffer_size 4k;
+        proxy_buffers 8 4k;
+    }
+
+    # === Rate Limiting ===
+    # Define rate limit zone at http block: limit_req_zone $binary_remote_addr zone=api_limit:10m rate=10r/s;
+    # Then enable here:
+    # limit_req zone=api_limit burst=20 nodelay;
+}
+
+# ============================================================================
+# HTTPS - Frontend App (Optional - keep if using Vercel)
+# ============================================================================
+# Note: If frontend is on Vercel, you don't need this section.
+# Remove if frontend is deployed separately.
+
+# server {
+#     listen 443 ssl http2;
+#     listen [::]:443 ssl http2;
+#     server_name app.yourdomain.com;
+# 
+#     ssl_certificate /etc/letsencrypt/live/yourdomain.com/fullchain.pem;
+#     ssl_certificate_key /etc/letsencrypt/live/yourdomain.com/privkey.pem;
+#     ssl_protocols TLSv1.2 TLSv1.3;
+#     ssl_ciphers HIGH:!aNULL:!MD5;
+#     ssl_prefer_server_ciphers on;
+# 
+#     location / {
+#         proxy_pass http://127.0.0.1:3000;  # Next.js dev/build server
+#         proxy_set_header Host $host;
+#         proxy_set_header X-Real-IP $remote_addr;
+#         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+#         proxy_set_header X-Forwarded-Proto $scheme;
+#     }
+# }

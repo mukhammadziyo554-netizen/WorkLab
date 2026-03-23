@@ -16,6 +16,8 @@ function pickBackendTarget() {
 const backendTarget = pickBackendTarget();
 
 const nextConfig = {
+  // Prevent dev and build processes from corrupting each other's chunk outputs.
+  distDir: process.env.NODE_ENV === "development" ? ".next-dev" : ".next",
   async rewrites() {
     return [
       {
@@ -33,6 +35,18 @@ const nextConfig = {
       {
         source: "/operations/:path*",
         destination: `${backendTarget}/operations/:path*`,
+      },
+      {
+        source: "/features/:path*",
+        destination: `${backendTarget}/features/:path*`,
+      },
+      {
+        source: "/billing/:path*",
+        destination: `${backendTarget}/billing/:path*`,
+      },
+      {
+        source: "/admin/:path*",
+        destination: `${backendTarget}/admin/:path*`,
       },
       {
         source: "/health",

@@ -5,6 +5,8 @@ import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getApiHeaders, getBackendBaseUrl } from "../../lib/backend";
+import { clearSessionToken } from "../../lib/session";
+import { useLanguage } from "../providers/LanguageProvider";
 
 type AccountUser = {
   first_name?: string;
@@ -45,6 +47,7 @@ function getInitials(user: AccountUser): string {
 }
 
 export default function UserAvatarMenu() {
+  const { t } = useLanguage();
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [isOpen, setIsOpen] = useState(false);
@@ -136,7 +139,7 @@ export default function UserAvatarMenu() {
     } catch {
       // Logout should still complete client-side.
     } finally {
-      window.localStorage.removeItem(SESSION_KEY);
+      clearSessionToken();
       setUser(null);
       setIsOpen(false);
       setIsLoggingOut(false);
@@ -179,21 +182,21 @@ export default function UserAvatarMenu() {
             className="block rounded-lg px-3 py-2 text-sm text-slate-200 transition hover:bg-white/10"
             onClick={() => setIsOpen(false)}
           >
-            Profile
+            {t.common.profile}
           </Link>
           <Link
             href="/dashboard"
             className="block rounded-lg px-3 py-2 text-sm text-slate-200 transition hover:bg-white/10"
             onClick={() => setIsOpen(false)}
           >
-            Dashboard
+            {t.common.dashboard}
           </Link>
           <Link
             href="/dashboard"
             className="block rounded-lg px-3 py-2 text-sm text-slate-200 transition hover:bg-white/10"
             onClick={() => setIsOpen(false)}
           >
-            Settings
+            {t.common.settings}
           </Link>
           {user.role === "admin" ? (
             <Link
@@ -201,7 +204,7 @@ export default function UserAvatarMenu() {
               className="block rounded-lg px-3 py-2 text-sm text-cyan-200 transition hover:bg-white/10"
               onClick={() => setIsOpen(false)}
             >
-              Admin
+              {t.common.admin}
             </Link>
           ) : null}
           <button
@@ -210,7 +213,7 @@ export default function UserAvatarMenu() {
             disabled={isLoggingOut}
             className="mt-1 w-full rounded-lg px-3 py-2 text-left text-sm text-rose-200 transition hover:bg-rose-400/15 disabled:cursor-not-allowed"
           >
-            {isLoggingOut ? "Logging out..." : "Logout"}
+            {isLoggingOut ? t.common.loggingOut : t.common.logout}
           </button>
         </div>
       ) : null}

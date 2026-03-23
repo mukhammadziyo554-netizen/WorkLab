@@ -20,13 +20,16 @@ function isTelegramRuntime(): boolean {
 
 export function getBackendBaseUrl(): string {
   const configured = process.env.NEXT_PUBLIC_BACKEND_URL?.trim();
-  if (configured && !isPlaceholderBackendUrl(configured)) {
-    return stripTrailingSlash(configured);
-  }
 
   if (typeof window !== "undefined") {
-    // Fall back to same-origin so Next.js rewrites can proxy API calls.
+    // In the browser, always prefer same-origin so Next.js rewrites proxy API calls
+    // to backend target configured in next.config.js. This avoids CORS issues and
+    // false "backend offline" status when frontend and backend run on different ports.
     return stripTrailingSlash(window.location.origin);
+  }
+
+  if (configured && !isPlaceholderBackendUrl(configured)) {
+    return stripTrailingSlash(configured);
   }
 
   return "";
