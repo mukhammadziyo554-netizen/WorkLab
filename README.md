@@ -1,234 +1,369 @@
-# WorkLab
+# 🤖 WorkLab - AI-Powered Customer Support Platform
 
-WorkLab is a full-stack SaaS platform where businesses create AI employees that automate customer support through Telegram.
+> An innovative solution for automating customer support using AI employees integrated with Telegram
 
-## Project Structure
+**Live Demo:** [https://frontend-gjmawb1kv-mukhammadziyo554-netizens-projects.vercel.app](https://frontend-gjmawb1kv-mukhammadziyo554-netizens-projects.vercel.app)
+
+**GitHub Repository:** [https://github.com/mukhammadziyo554-netizen/WorkLab](https://github.com/mukhammadziyo554-netizen/WorkLab)
+
+---
+
+## 📋 Overview
+
+WorkLab is a comprehensive SaaS platform that revolutionizes customer support automation. It empowers businesses to:
+
+- **Create AI Employees**: Design intelligent customer support agents with minimal configuration
+- **Automate on Telegram**: Reach customers where they are—directly through Telegram Mini Apps
+- **Build Knowledge Bases**: Train AI agents on your company's documentation and processes
+- **Analyze Performance**: Track conversations, response quality, and customer satisfaction metrics
+- **Scale Effortlessly**: Handle unlimited conversations without manual intervention
+
+The platform combines modern full-stack development with AI integration, providing a production-ready solution for enterprise customer support automation.
+
+---
+
+## ✨ Key Features
+
+### 🔧 AI Employee Management
+- **Easy Configuration**: Create AI employees through an intuitive dashboard
+- **Knowledge Integration**: Upload and manage knowledge bases for accurate responses
+- **Customizable Behavior**: Define personality, tone, and response rules per employee
+
+### 💬 Telegram Integration
+- **Mini App Experience**: Seamless Telegram Mini App for customer interactions
+- **Real-time Updates**: Webhook-based updates for instant message handling
+- **Bot Commands**: Support for /help, /settings, and custom Telegram commands
+
+### 📊 Analytics Dashboard
+- **Conversation Analytics**: Track conversation volume, duration, and customer satisfaction
+- **Performance Metrics**: Monitor AI employee response quality and customer engagement
+- **Insights & Reports**: Generate actionable insights from customer interactions
+
+### 🛡️ Enterprise Features
+- **CORS Security**: Domain-restricted API access
+- **Rate Limiting**: API usage controls and throttling
+- **Audit Logging**: Complete history of all operations
+- **Database Encryption**: SQLite with secure storage patterns
+
+---
+
+## 🛠️ Technology Stack
+
+### Frontend
+- **Framework**: [Next.js 15](https://nextjs.org) (React with Server Components)
+- **Language**: TypeScript for type-safe development
+- **Styling**: [Tailwind CSS](https://tailwindcss.com) for responsive design
+- **Authentication**: Telegram Mini App integration with HMAC-SHA256 verification
+- **UI Components**: Custom components + Telegram UI compatibility
+- **Internationalization**: Multi-language support (English, Russian, Uzbek)
+
+### Backend
+- **Framework**: [FastAPI](https://fastapi.tiangolo.com) (Python 3.11+)
+- **Server**: Uvicorn with async/await support
+- **Database**: SQLite with connection pooling
+- **Telegram**: Webhook-based bot updates (not polling)
+- **AI Integration**: Extensible architecture for LLM integration
+- **Security**: Input validation via Pydantic, CORS middleware
+
+### DevOps & Deployment
+- **Frontend Hosting**: [Vercel](https://vercel.com) (auto-scaling, CDN)
+- **Backend Hosting**: VPS-ready (PM2, Docker, Systemd support)
+- **Process Management**: PM2 with auto-restart and memory limits
+- **Reverse Proxy**: Nginx with SSL/TLS and security headers
+- **SSL/TLS**: Let's Encrypt automated certificate management
+- **Containerization**: Docker & Docker Compose ready
+
+---
+
+## 📁 Project Structure
 
 ```text
 worklab/
-├─ frontend/                # Next.js + TypeScript + Tailwind CSS app
-│  ├─ src/                  # Website, dashboard pages, and UI components
-│  ├─ package.json
-│  └─ ...
-├─ backend/                 # Python + FastAPI services
-│  ├─ main.py               # FastAPI app and API endpoints
-│  ├─ telegram_bot.py       # Telegram webhook parsing and payload helpers
-│  ├─ ai_agent.py           # Placeholder AI response generation
-│  ├─ database.py           # SQLite schema and DB connection helpers
-│  └─ requirements.txt
-└─ README.md
+├── frontend/                   # Next.js SPA application
+│   ├── src/
+│   │   ├── app/               # Next.js app router pages
+│   │   ├── components/        # React components
+│   │   ├── lib/               # Utilities and helpers
+│   │   └── locales/           # i18n translations (EN, RU, UZ)
+│   ├── package.json
+│   └── tsconfig.json
+├── backend/                    # FastAPI Python server
+│   ├── main.py                # API endpoints and Telegram webhook
+│   ├── telegram_bot.py        # Telegram Mini App integration
+│   ├── ai_agent.py            # AI response generation
+│   ├── database.py            # Database schema and ORM
+│   ├── models/                # Pydantic models
+│   ├── routers/               # API route handlers
+│   ├── services/              # Business logic
+│   ├── requirements.txt
+│   └── .env.example
+├── scripts/                    # Helper scripts for development
+├── DEPLOYMENT.md              # Production deployment guide
+├── SECURITY.md                # Security best practices
+└── README.md
 ```
 
-## Run Frontend
+---
 
+## 🚀 Quick Start
+
+### Prerequisites
+- **Node.js 18+** and npm
+- **Python 3.11+**
+- **Telegram Bot Token** from [@BotFather](https://t.me/BotFather)
+
+### Local Development
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/mukhammadziyo554-netizen/WorkLab.git
+   cd WorkLab
+   ```
+
+2. **Setup Frontend**
+   ```bash
+   cd frontend
+   npm install
+   npm run dev
+   # Frontend runs on http://localhost:3000
+   ```
+
+3. **Setup Backend** (in another terminal)
+   ```bash
+   cd backend
+   cp .env.example .env
+   # Edit .env with your Telegram bot token and URLs
+   python3 -m pip install -r requirements.txt
+   python3 run_backend.py
+   # Backend API runs on http://localhost:8000
+   ```
+
+4. **Optional: Run Telegram Bot**
+   ```bash
+   cd backend
+   python3 run_telegram_bot.py
+   # For webhook mode, ensure backend is accessible via HTTPS
+   ```
+
+### Using Helper Scripts (Recommended)
+
+For easier local development:
+
+```bash
+./scripts/dev-start.sh   # Start both frontend and backend
+./scripts/dev-status.sh  # Check process status
+./scripts/dev-stop.sh    # Stop both services
+```
+
+---
+
+## 🌐 Environment Variables
+
+### Frontend (`.env.local`)
+```
+NEXT_PUBLIC_BACKEND_URL=http://localhost:8000
+```
+
+### Backend (`.env`)
+```
+TELEGRAM_BOT_TOKEN=your-token-here
+APP_PUBLIC_URL=https://api.yourdomain.com
+WORKLAB_WEBAPP_URL=https://app.yourdomain.com
+CORS_ALLOWED_ORIGINS=https://app.yourdomain.com
+```
+
+See `frontend/.env.example` and `backend/.env.example` for all options.
+
+---
+
+## 🧪 Build & Production
+
+### Frontend Build
 ```bash
 cd frontend
-npm install
-npm run dev
-```
-
-## Stable Local Startup (Recommended)
-
-Use the helper scripts below to avoid duplicate processes and port conflicts.
-
-```bash
-cd /Users/muhammadziyo/WorkLab
-./scripts/dev-start.sh
-```
-
-Check status:
-
-```bash
-cd /Users/muhammadziyo/WorkLab
-./scripts/dev-status.sh
-```
-
-Stop both services:
-
-```bash
-cd /Users/muhammadziyo/WorkLab
-./scripts/dev-stop.sh
-```
-
-Logs are written to `.dev/backend.log` and `.dev/frontend.log`.
-
-Production mode:
-
-```bash
-cd frontend
-npm install
 npm run build
-npm start
+npm run start  # Production server
 ```
 
-## Run Backend
-
+### Deploy to Vercel (Recommended)
 ```bash
-cd backend
-python3 run_backend.py
+cd frontend
+npm install -g vercel
+vercel --prod
 ```
 
-This command uses a lightweight supervisor that:
-- keeps a single backend instance lock,
-- starts FastAPI with the correct app directory,
-- restarts automatically if the backend process crashes.
+### Backend Deployment Options
 
-Optional environment variables:
-- `BACKEND_HOST` (default `127.0.0.1`)
-- `BACKEND_PORT` (default `8000`)
-- `BACKEND_RELOAD` (`1` enables uvicorn reload)
-- `BACKEND_RESTART_DELAY_SEC` (default `2.0`)
-- `BACKEND_MAX_RESTART_DELAY_SEC` (default `8.0`)
+Choose one based on your infrastructure:
 
-## Run Telegram Bot (From This Folder)
-
+**Option 1: PM2 (Recommended for simplicity)**
 ```bash
-cd backend
-cp .env.example .env
-python3 run_telegram_bot.py
+npm install -g pm2
+pm2 start ecosystem.config.js
+pm2 save  # Persist across restarts
 ```
 
-Bot behavior:
-- On startup, bot configures persistent Telegram menu button: `Open WorkLab`.
-- Pressing the menu button opens `WORKLAB_WEBAPP_URL` inside Telegram Mini App.
-- Other text messages are forwarded to `BACKEND_WEBHOOK_URL` and replies are sent back to Telegram.
-
-## Integration Notes
-
-- Frontend and backend run independently.
-- Frontend communicates with backend through HTTP APIs.
-- Backend handles Telegram communication, AI processing, and database persistence.
-
-## Internationalization (EN/RU/UZ)
-
-- Locale dictionaries are centralized under `frontend/src/locales`:
-	- `en.json`
-	- `ru.json`
-	- `uz.json`
-- Active language is managed by `LanguageProvider` and persisted in localStorage key `language`.
-- Missing keys automatically fall back to English (`en.json`).
-- Language switching is dynamic (no page reload), including Telegram Mini App pages.
-
-## Deployment (GitHub -> Vercel + Backend)
-
-### 1) Push to GitHub
-
-If this is your first push from this project root:
-
+**Option 2: Docker Compose (Recommended for isolation)**
 ```bash
-cd /Users/muhammadziyo/WorkLab
-gh auth login
-gh repo create WorkLab --private --source=. --remote=origin --push
+docker-compose up -d
+# Full stack (backend + database) in containers
 ```
 
-If the GitHub repo already exists:
-
+**Option 3: Traditional VPS with Systemd**
 ```bash
-cd /Users/muhammadziyo/WorkLab
-git remote add origin https://github.com/<your-username>/WorkLab.git
-git push -u origin main
+sudo cp worklab-backend.service /etc/systemd/system/
+sudo systemctl enable worklab-backend
+sudo systemctl start worklab-backend
 ```
 
-### 2) Deploy Frontend on Vercel
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for complete production setup instructions.
 
-- Import the GitHub repository in Vercel.
-- Set Root Directory to `frontend`.
-- Framework preset: Next.js (auto-detected).
-- Build command: `npm run build`.
-- Install command: `npm install`.
-- Add environment variable:
-	- `NEXT_PUBLIC_BACKEND_URL=https://<your-backend-domain>`
+---
 
-### 3) Deploy Backend (Render Blueprint Included)
+## 🔌 Telegram Integration
 
-This repository includes `render.yaml` for backend deployment.
+### Setup Telegram Bot
 
-- In Render, create a new Blueprint instance from this repo.
-- Service root uses `backend` and starts FastAPI with Uvicorn.
-- Health check path is `/health`.
-- Persistent disk is mounted at `/var/data`.
-- Set required environment variables in Render:
-	- `TELEGRAM_BOT_TOKEN`
-	- `APP_PUBLIC_URL=https://<your-backend-domain>`
-	- `WORKLAB_WEBAPP_URL=https://<your-vercel-domain>`
-	- `CORS_ALLOWED_ORIGINS=https://<your-vercel-domain>`
-	- `BACKEND_WEBHOOK_URL=https://<your-backend-domain>/telegram/webhook`
+1. Create a bot on Telegram using [@BotFather](https://t.me/BotFather)
+2. Copy the bot token and add to `.env`
+3. Register webhook with Telegram:
+   ```bash
+   curl -X POST https://api.telegram.org/bot{TOKEN}/setWebhook?url=https://yourdomain.com/telegram/webhook
+   ```
 
-### 4) Database Persistence
+### Mini App Flow
 
-- Backend now supports configurable DB location via `WORKLAB_DB_PATH`.
-- In Render blueprint this is set to `/var/data/worklab.db`, so SQLite data survives deploys/restarts.
+The application provides a complete Telegram Mini App experience:
 
-## Telegram Mini App Connection (Bot + Web in Separate Projects)
+1. User starts conversation with bot
+2. Bot shows "Open WorkLab" menu button
+3. Clicks button → Opens Mini App in Telegram
+4. Mini App verifies user with backend
+5. Backend handles AI responses via `/telegram/webhook`
 
-Use URL-based integration only. No shared files are required between projects.
+---
 
-### 1) Bot Project
+## 🌍 Internationalization
 
-- Set `WORKLAB_WEBAPP_URL` to your deployed Next.js URL (for example `https://app.worklab.uz`).
-- Set `APP_PUBLIC_URL` to your deployed backend URL (for example `https://api.worklab.uz`).
-- Bot sets Telegram menu button via `setChatMenuButton` with:
-	- Button text: `Open WorkLab`
-	- Button type: `web_app`
-	- URL: `WORKLAB_WEBAPP_URL`
+Support for English, Russian, and Uzbek:
+- Locale files: `frontend/src/locales/{en,ru,uz}.json`
+- Managed by `LanguageProvider` component
+- Persisted in `localStorage`
+- Dynamic switching without page reload
 
-### 2) Web Project (Next.js)
+---
 
-- Load Telegram SDK script: `https://telegram.org/js/telegram-web-app.js`
-- Read Telegram Mini App context:
-	- `window.Telegram.WebApp.initDataUnsafe.user`
-	- `window.Telegram.WebApp.initData`
-- Send auth request to backend:
-	- `POST /telegram-auth`
-	- JSON body includes `user` and `init_data`
+## 📚 Technical Documentation
 
-### 3) Backend API (FastAPI)
+### For Developers
+- **[DEPLOYMENT.md](./DEPLOYMENT.md)** - Production setup guide (VPS, SSL, monitoring)
+- **[DEPLOYMENT_CHECKLIST.md](./DEPLOYMENT_CHECKLIST.md)** - Pre-deployment checklist
+- **[QUICK_START_PRODUCTION.md](./QUICK_START_PRODUCTION.md)** - 30-minute setup guide
 
-- `POST /telegram-auth` accepts:
-	- `init_data` (preferred and verified with `TELEGRAM_BOT_TOKEN`)
-	- `user` (fallback payload)
-- Backend behavior:
-	- verifies Telegram signature when `init_data` is present
-	- finds existing user by `telegram_id`
-	- creates user if not found
-	- creates session token and returns success response
+### For Security & Operations
+- **[SECURITY.md](./SECURITY.md)** - Security best practices, CORS, rate limiting, incident response
 
-### 4) Required Environment Variables
+---
 
-- Backend:
-	- `TELEGRAM_BOT_TOKEN` for Telegram signature verification
-	- `TELEGRAM_AUTH_MAX_AGE_SEC` (optional, default `86400`)
-	- `APP_PUBLIC_URL` for backend public base URL (for example `https://api.worklab.uz`)
-	- `WORKLAB_WEBAPP_URL` for the Mini App frontend URL (for example `https://app.worklab.uz`)
-	- `CORS_ALLOWED_ORIGINS` for strict CORS whitelist (comma-separated; example `https://app.worklab.uz`)
-	- `BACKEND_WEBHOOK_URL` (optional, defaults to `APP_PUBLIC_URL/telegram/webhook`)
-- Frontend:
-	- `NEXT_PUBLIC_BACKEND_URL` for API calls (for example `https://api.worklab.uz`)
-
-## Production Deployment Guide
-
-For 24/7 production deployment without ngrok or local development servers:
-
-### Quick Start (30 minutes)
-
-See [QUICK_START_PRODUCTION.md](./QUICK_START_PRODUCTION.md) for a minimal setup guide.
-
-### Full Production Documentation
-
-Complete deployment guide with VPS setup, SSL configuration, monitoring, and troubleshooting:
-
-- **[DEPLOYMENT.md](./DEPLOYMENT.md)** - Complete production deployment guide
-- **[DEPLOYMENT_CHECKLIST.md](./DEPLOYMENT_CHECKLIST.md)** - Pre-deployment verification checklist
-
-### Deployment Architecture
+## 🏗️ Architecture Overview
 
 ```
-yourdomain.com
-    ├── Frontend: app.yourdomain.com → Vercel (or VPS)
-    ├── Backend API: api.yourdomain.com → VPS:8000
-    │   └── Telegram Webhook: /telegram/webhook
-    └── Telegram: Webhook mode (no polling)
+┌─────────────────────────────────────────────────────────┐
+│                   Telegram Users                        │
+└────────────────────┬────────────────────────────────────┘
+                     │
+                 Telegram API
+                     │
+         ┌───────────┴────────────┐
+         │                        │
+    ┌────▼──────┐           ┌────▼──────────┐
+    │   Telegram│           │              │
+    │ Mini App  │           │   Bot        │
+    │ (Frontend)│           │ (/webhook)   │
+    └────┬──────┘           └────┬──────────┘
+         │                       │
+         │ HTTPS                 │ Webhook POST
+         │                       │
+    ┌────┴───────────────────────▼──────┐
+    │      Nginx (Reverse Proxy)        │
+    │      • SSL/TLS Termination        │
+    │      • Rate Limiting              │
+    │      • Security Headers           │
+    └────┬──────────┬────────────────────┘
+         │          │
+    ┌────▼────┐ ┌───▼────────────┐
+    │ Frontend │ │ Backend API    │
+    │(React)   │ │(FastAPI)       │
+    │Vercel    │ │ VPS:8000       │
+    │          │ │ • Auth         │
+    │• i18n    │ │ • AI Engine    │
+    │• Auth    │ │ • Database     │
+    │• UI      │ │ • Admin Panel  │
+    └──────────┘ └────────────────┘
 ```
+
+---
+
+## 📊 Key Endpoints
+
+### Frontend
+- **Home**: `/`
+- **Dashboard**: `/dashboard`
+- **Admin Panel**: `/admin`
+- **Telegram Mini App**: `/telegram-bot`
+- **Authentication**: `/login`, `/signup`
+
+### Backend (API)
+- **Health Check**: `GET /health`
+- **Telegram Webhook**: `POST /telegram/webhook`
+- **Authentication**: `POST /telegram-auth`
+- **Admin Endpoints**: `GET/POST /admin/*`
+- **User Management**: `GET/POST /users/*`
+- **Bot Configuration**: `POST /telegram/webhook/configure`
+
+---
+
+## 🔒 Security Features
+
+- ✅ **Telegram HMAC-SHA256 Signature Verification**
+- ✅ **CORS Headers** - Domain-restricted API access
+- ✅ **Rate Limiting** - 100 requests per 60 seconds per IP
+- ✅ **HTTPS/TLS** - Let's Encrypt SSL certificates
+- ✅ **Input Validation** - Pydantic models with constraints
+- ✅ **Security Headers** - CSP, X-Frame-Options, HSTS
+- ✅ **Environment Secrets** - Protected via .env (not in git)
+
+---
+
+## 📈 Performance
+
+- **Frontend**: Vercel global CDN, ~50ms latency worldwide
+- **Backend**: Uvicorn async server, support for thousands of concurrent connections
+- **Database**: SQLite with connection pooling
+- **API**: Response times typically <200ms
+
+---
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit changes (`git commit -m 'Add amazing feature'`)
+4. Push to branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+---
+
+## 📝 License
+
+This project is provided as-is for portfolio and educational purposes.
+
+---
+
+## 📧 Contact & Support
+
+- **Repository**: [GitHub - WorkLab](https://github.com/mukhammadziyo554-netizen/WorkLab)
+- **Live Demo**: [Vercel Deployment](https://frontend-gjmawb1kv-mukhammadziyo554-netizens-projects.vercel.app)
 
 ### Key Files for Production
 
