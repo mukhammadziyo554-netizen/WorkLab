@@ -44,10 +44,9 @@ dist/
 build/
 coverage/
 
-# Workspace root symlink helpers
+# Workspace root symlink helpers (deprecated - removed from project structure)
 /src
 /next-env.d.ts
-/tsconfig.json
 
 # Production deployment artifacts
 .dev/

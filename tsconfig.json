@@ -1,0 +1,8 @@
+{
+  "extends": "./frontend/tsconfig.json",
+  "include": [
+    "frontend/**/*.ts",
+    "frontend/**/*.tsx",
+    "frontend/.next/types/**/*.ts"
+  ]
+}
