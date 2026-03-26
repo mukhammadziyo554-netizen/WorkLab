@@ -72,8 +72,21 @@ export default function LoginPage() {
           setBackendOnline(response.ok);
         }
       } catch {
-        if (!isCancelled) {
-          setBackendOnline(false);
+        // Retry once before reporting offline to avoid transient network flakiness
+        try {
+          await new Promise((r) => setTimeout(r, 250));
+          const retry = await fetch(`${backendBaseUrl}/health`, {
+            method: "GET",
+            cache: "no-store",
+            headers: getApiHeaders(),
+          });
+          if (!isCancelled) {
+            setBackendOnline(retry.ok);
+          }
+        } catch {
+          if (!isCancelled) {
+            setBackendOnline(false);
+          }
         }
       }
     };

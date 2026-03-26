@@ -3,6 +3,7 @@ import Script from "next/script";
 import { LanguageProvider } from "../components/providers/LanguageProvider";
 import TelegramAuthBootstrap from "../components/providers/TelegramAuthBootstrap";
 import UIEffectsBootstrap from "../components/providers/UIEffectsBootstrap";
+import AuthProvider from "../components/providers/AuthProvider";
 import "./globals.css";
 
 type RootLayoutProps = {
@@ -14,9 +15,11 @@ export default function RootLayout({ children }: RootLayoutProps) {
     <html lang="en" suppressHydrationWarning>
       <body>
         <Script src="https://telegram.org/js/telegram-web-app.js" strategy="afterInteractive" />
-        <LanguageProvider>{children}</LanguageProvider>
-        <TelegramAuthBootstrap />
-        <UIEffectsBootstrap />
+        <AuthProvider>
+          <LanguageProvider>{children}</LanguageProvider>
+          <TelegramAuthBootstrap />
+          <UIEffectsBootstrap />
+        </AuthProvider>
       </body>
     </html>
   );

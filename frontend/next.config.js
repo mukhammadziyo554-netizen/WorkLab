@@ -5,9 +5,14 @@ function pickBackendTarget() {
     return internal;
   }
 
-  const publicUrl = process.env.NEXT_PUBLIC_BACKEND_URL?.trim();
-  if (publicUrl && !/your-backend-domain\.com/i.test(publicUrl)) {
-    return publicUrl;
+  const publicApi = process.env.NEXT_PUBLIC_API_URL?.trim();
+  if (publicApi && !/your-backend-domain\.com/i.test(publicApi)) {
+    return publicApi;
+  }
+
+  const legacy = process.env.NEXT_PUBLIC_BACKEND_URL?.trim();
+  if (legacy && !/your-backend-domain\.com/i.test(legacy)) {
+    return legacy;
   }
 
   return "http://localhost:8000";

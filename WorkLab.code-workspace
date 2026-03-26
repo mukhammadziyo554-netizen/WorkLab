@@ -1,0 +1,25 @@
+{
+  "folders": [
+    {
+      "path": "frontend",
+      "name": "Frontend App"
+    },
+    {
+      "path": "backend",
+      "name": "Backend API"
+    }
+  ],
+  "settings": {
+    "typescript.tsdk": "frontend/node_modules/typescript/lib",
+    "typescript.enablePromptUseWorkspaceTsdk": true,
+    "files.associations": {
+      "*.css": "postcss"
+    },
+    "css.lint.unknownAtRules": "ignore",
+    "search.exclude": {
+      "frontend/.next": true,
+      "frontend/out": true,
+      "**/node_modules": true
+    }
+  }
+}

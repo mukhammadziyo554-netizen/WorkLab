@@ -4,6 +4,8 @@ node_modules
 .next/
 out/
 frontend/.next/
+frontend/.next-dev/
+.next-dev/
 frontend/node_modules/
 
 # Python

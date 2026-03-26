@@ -15,13 +15,18 @@ type NavItem = {
   adminOnly?: boolean;
 };
 
-export default function Sidebar() {
+type SidebarProps = {
+  onCollapseChange?: (collapsed: boolean) => void;
+};
+
+export default function Sidebar({ onCollapseChange }: SidebarProps = {}) {
   const pathname = usePathname();
   const router = useRouter();
   const { t } = useLanguage();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [featureMap, setFeatureMap] = useState<Record<string, boolean>>({});
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   useEffect(() => {
     const token = window.localStorage.getItem("worklab_session_token");
@@ -106,50 +111,157 @@ export default function Sidebar() {
     }
   };
 
+  const sidebarWidth = isCollapsed ? 72 : 240;
+
   return (
-    <aside className="w-full border-b border-white/10 bg-[#05070f] p-4 md:h-screen md:w-60 md:border-b-0 md:border-r md:p-5">
-      <div className="mb-6">
-        <Link
-          href="/"
-          aria-label="Go to home page"
-          className="group inline-block cursor-pointer rounded-lg transition hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-cyan-300/40"
-        >
-          <h1 className="text-lg font-bold tracking-tight text-white transition group-hover:text-cyan-200">
-            WorkLab
-          </h1>
-          <p className="text-[0.68rem] uppercase tracking-[0.14em] text-slate-400 transition group-hover:text-slate-200">
-            {t.sidebar.subtitle}
-          </p>
-        </Link>
-      </div>
+    <>
+      {/* Fixed sidebar for md+ */}
+      <aside
+        className="fixed top-0 left-0 z-[1000] h-screen hidden md:flex flex-col transition-all duration-300"
+        style={{ width: sidebarWidth, background: "linear-gradient(180deg, #0B0F1A, #0A0D16)", boxShadow: "inset 0 0 40px rgba(0,0,0,0.3)" }}
+        aria-hidden={false}
+      >
+        <div className="relative h-full overflow-y-auto px-4 py-5">
+          <button
+            type="button"
+            onClick={() => {
+              const newCollapsed = !isCollapsed;
+              setIsCollapsed(newCollapsed);
+              onCollapseChange?.(newCollapsed);
+            }}
+            aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            className="absolute top-4 right-4 flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-[rgba(255,255,255,0.05)] backdrop-blur-md text-slate-200 transition-transform duration-200 hover:scale-105"
+            style={{ backdropFilter: "blur(10px)" }}
+          >
+            <span className="text-sm">{isCollapsed ? "→" : "←"}</span>
+          </button>
 
-      <nav className="grid gap-1.5">
-        {visibleItems.map((item) => {
-          const isActive = item.activeWhen
-            ? item.activeWhen(pathname)
-            : pathname === item.href || pathname.startsWith(`${item.href}/`);
-          const className = `rounded-lg px-3 py-1.5 text-[0.82rem] font-medium transition ${
-            isActive
-              ? "border border-cyan-300/35 bg-gradient-to-r from-cyan-300/20 to-purple-500/20 text-cyan-100"
-              : "border border-transparent text-slate-200 hover:border-white/10 hover:bg-white/5 hover:text-white"
-          }`;
+          <div className="mb-6 mt-2 flex items-center gap-3 transition-opacity duration-250">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-cyan-300 to-blue-500 flex-shrink-0" />
+              <div className={`overflow-hidden transition-all duration-250 ${isCollapsed ? 'opacity-0 max-w-0' : 'opacity-100 max-w-[300px]'}`}>
+                <Link href="/" className="group block">
+                  <h1 className="text-lg font-bold tracking-tight text-white group-hover:text-cyan-200">WorkLab</h1>
+                  <p className="text-[0.68rem] uppercase tracking-[0.14em] text-slate-400 group-hover:text-slate-200">{t.sidebar.subtitle}</p>
+                </Link>
+              </div>
+            </div>
+          </div>
 
-          return (
-            <Link key={item.label} href={item.href} className={`button-pop ${className}`}>
-              {item.label}
-            </Link>
-          );
-        })}
+          <nav className="grid gap-2">
+            {visibleItems.map((item) => {
+              const isActive = item.activeWhen
+                ? item.activeWhen(pathname)
+                : pathname === item.href || pathname.startsWith(`${item.href}/`);
 
-        <button
-          type="button"
-          onClick={onLogout}
-          disabled={isLoggingOut}
-          className="button-pop mt-2.5 rounded-lg border border-white/15 px-3 py-1.5 text-left text-[0.82rem] font-medium text-slate-200 transition hover:border-rose-300/40 hover:bg-rose-400/10 hover:text-rose-200"
-        >
-          {isLoggingOut ? t.common.loggingOut : t.common.logout}
-        </button>
-      </nav>
-    </aside>
+              return (
+                <Link
+                  key={item.label}
+                  href={item.href}
+                  className={`group flex items-center gap-3 rounded-lg px-3 py-2 transition-colors duration-200 ${
+                    isActive
+                      ? 'border border-transparent bg-gradient-to-r from-cyan-300/18 to-purple-500/12 text-cyan-100 shadow-[0_0_10px_rgba(0,255,200,0.08)]'
+                      : 'text-slate-200 hover:bg-[rgba(255,255,255,0.03)] hover:text-white'
+                  }`}
+                  style={{ alignItems: 'center' }}
+                >
+                  <span className={`inline-flex h-5 w-5 flex-shrink-0 items-center justify-center rounded ${isActive ? 'bg-cyan-300/20' : 'bg-white/5'}`}>
+                    <svg className="h-3 w-3 text-cyan-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><circle cx="12" cy="12" r="4" /></svg>
+                  </span>
+
+                  <span className={`transition-opacity duration-200 ${isCollapsed ? 'opacity-0 max-w-0 overflow-hidden' : 'opacity-100'}`}>{item.label}</span>
+                </Link>
+              );
+            })}
+
+            <button
+              type="button"
+              onClick={onLogout}
+              disabled={isLoggingOut}
+              className="mt-3 rounded-lg border border-white/15 px-3 py-2 text-left text-[0.9rem] font-medium text-slate-200 transition hover:border-rose-300/40 hover:bg-rose-400/10 hover:text-rose-200"
+            >
+              {isLoggingOut ? t.common.loggingOut : t.common.logout}
+            </button>
+          </nav>
+        </div>
+      </aside>
+
+      {/* Mobile: overlay drawer */}
+      <MobileDrawer />
+
+      {/* Spacer to keep flow/layout alignment for pages that render Sidebar in-flow */}
+      <div className="hidden md:block" style={{ width: sidebarWidth }} aria-hidden="true" />
+    </>
   );
 }
+
+    function MobileDrawer() {
+      const [open, setOpen] = useState(false);
+      const { t } = useLanguage();
+
+      useEffect(() => {
+        if (open) {
+          document.body.style.overflow = "hidden";
+        } else {
+          document.body.style.overflow = "";
+        }
+        return () => {
+          document.body.style.overflow = "";
+        };
+      }, [open]);
+
+      const navItems = [
+        { label: t.mobileNav?.aiEmployees ?? "AI Employees", href: "/dashboard/ai-employees" },
+        { label: t.mobileNav?.knowledgeBase ?? "Knowledge Base", href: "/dashboard/knowledge-base" },
+        { label: t.mobileNav?.conversations ?? "Conversations", href: "/dashboard/conversations" },
+        { label: t.mobileNav?.analytics ?? "Analytics", href: "/dashboard/analytics" },
+        { label: t.mobileNav?.settings ?? "Settings", href: "/dashboard/settings" },
+      ];
+
+      return (
+        <>
+          <div className="md:hidden">
+            <div className="p-3">
+              <button
+                type="button"
+                aria-label={open ? "Close menu" : "Open menu"}
+                onClick={() => setOpen((v) => !v)}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-white/5 text-slate-200 transition hover:border-cyan-300/45"
+              >
+                <span>{open ? '✕' : '☰'}</span>
+              </button>
+            </div>
+          </div>
+
+          <div
+            className={`fixed inset-0 z-50 md:hidden transition-opacity duration-200 ${open ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+            aria-hidden={!open}
+          >
+            <div className={`absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-200 ${open ? 'opacity-100' : 'opacity-0'}`} onClick={() => setOpen(false)} />
+
+            <aside
+              className={`absolute left-0 top-0 h-full w-[78vw] max-w-[320px] bg-[linear-gradient(180deg,#0B0F1A,#0A0D16)] shadow-lg p-4 transition-transform duration-260 ${open ? 'translate-x-0' : '-translate-x-full'}`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="mb-4 flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-bold text-white">WorkLab</h3>
+                  <p className="text-xs text-slate-400">{t.sidebar.subtitle}</p>
+                </div>
+                <button onClick={() => setOpen(false)} className="h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-[rgba(255,255,255,0.03)] flex">
+                  ✕
+                </button>
+              </div>
+
+              <nav className="flex flex-col gap-2">
+                {navItems.map((item, idx) => (
+                  <Link key={item.href} href={item.href} onClick={() => setOpen(false)} className={`rounded-lg px-3 py-2 text-white/90 transition transform ${idx < 4 ? 'stagger-1' : ''}`}>
+                    {item.label}
+                  </Link>
+                ))}
+              </nav>
+            </aside>
+          </div>
+        </>
+      );
+    }

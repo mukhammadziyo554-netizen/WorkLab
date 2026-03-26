@@ -34,7 +34,7 @@ export default function CreateEmployeePage() {
     <div className="animate-fade-in min-h-screen bg-[#05070f] text-slate-100 md:flex">
       <Sidebar />
 
-      <main className="flex-1 p-6 sm:p-8 lg:p-10">
+      <main className="flex-1 p-4 sm:p-6 lg:p-8">
         <div className="mb-6 flex justify-end">
           <LanguageSwitcher />
         </div>

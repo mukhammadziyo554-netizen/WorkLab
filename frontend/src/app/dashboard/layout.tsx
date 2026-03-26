@@ -19,6 +19,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter();
   const [billingStatus, setBillingStatus] = useState<string>("");
   const [isAdmin, setIsAdmin] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     const sessionToken = window.localStorage.getItem("worklab_session_token");
@@ -66,16 +67,17 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   }, [router]);
 
   return (
-    <div className="min-h-screen bg-[#05070f] text-slate-100 md:flex">
-      <div className="hidden md:block">
-        <Sidebar />
-      </div>
+    <div className="min-h-screen bg-[#05070f] text-slate-100">
+      {/* Sidebar is fixed by component; render it in-flow so sidebar internals include a spacer */}
+      <Sidebar onCollapseChange={setSidebarCollapsed} />
       <div className="md:hidden">
         <MobileTelegramNav />
       </div>
-      <div className="flex-1">
-        <DashboardTopBar />
-        <main className="p-5 sm:p-6 lg:p-8">
+      <div className="transition-all duration-300" style={{ marginLeft: sidebarCollapsed ? 72 : 240 }}>
+        <div className="fixed top-0 right-0 z-40 transition-all duration-300" style={{ left: sidebarCollapsed ? 72 : 240 }}>
+          <DashboardTopBar />
+        </div>
+        <main className="pt-16 p-5 sm:p-6 lg:p-8">
         {billingStatus && billingStatus !== "active" && !isAdmin ? (
           <div className="mb-4 rounded-xl border border-amber-300/40 bg-amber-300/10 p-3.5 text-[0.85rem] text-amber-100">
             <p className="font-semibold">Subscription Required</p>

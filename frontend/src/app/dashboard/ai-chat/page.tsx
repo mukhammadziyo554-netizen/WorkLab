@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { getApiHeaders, getBackendBaseUrl } from "../../../lib/backend";
 import { useLanguage } from "../../../components/providers/LanguageProvider";
 
@@ -95,7 +95,7 @@ export default function AiChatPage() {
 
   const backendBaseUrl = getBackendBaseUrl();
 
-  const loadConversations = async (preferConversationId?: string) => {
+  const loadConversations = useCallback(async (preferConversationId?: string) => {
     const token = window.localStorage.getItem(SESSION_KEY);
     if (!token || !backendBaseUrl) {
       setConversations([]);
@@ -142,9 +142,9 @@ export default function AiChatPage() {
       }
       return mappedConversations[0].id;
     });
-  };
+  }, [backendBaseUrl, t]);
 
-  const loadMessages = async (conversationId: string, beforeId?: number) => {
+  const loadMessages = useCallback(async (conversationId: string, beforeId?: number) => {
     const token = window.localStorage.getItem(SESSION_KEY);
     if (!token || !backendBaseUrl) {
       return;
@@ -190,7 +190,7 @@ export default function AiChatPage() {
       ...previous,
       [conversationId]: Boolean(data.has_more),
     }));
-  };
+  }, [backendBaseUrl]);
 
   useEffect(() => {
     let cancelled = false;
@@ -220,7 +220,7 @@ export default function AiChatPage() {
     return () => {
       cancelled = true;
     };
-  }, [backendBaseUrl]);
+  }, [loadConversations, backendBaseUrl, t]);
 
   useEffect(() => {
     if (!activeConversationId) {
@@ -230,7 +230,7 @@ export default function AiChatPage() {
     void loadMessages(activeConversationId).catch((error) => {
       setErrorText(error instanceof Error && error.message === "subscription-required" ? t.aiChatPage.subscriptionRequired : t.aiChatPage.unableLoadMessages);
     });
-  }, [activeConversationId, t.aiChatPage.subscriptionRequired, t.aiChatPage.unableLoadMessages]);
+  }, [activeConversationId, loadMessages, t]);
 
   const visibleConversations = useMemo(() => {
     const normalized = query.trim().toLowerCase();

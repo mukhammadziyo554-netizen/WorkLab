@@ -78,11 +78,16 @@ def _build_cors_origins() -> list[str]:
         if origins:
             return origins
 
+    single = os.getenv("CORS_ORIGIN", "").strip()
+    if single:
+        return [single.rstrip("/")]
+
     public_frontend_url = os.getenv("WORKLAB_WEBAPP_URL", "").strip().rstrip("/")
     if public_frontend_url:
         return [public_frontend_url]
 
-    return []
+    # In development allow localhost (useful when running frontend locally)
+    return ["http://localhost:3000", "http://127.0.0.1:3000"]
 
 
 cors_origins = _build_cors_origins()

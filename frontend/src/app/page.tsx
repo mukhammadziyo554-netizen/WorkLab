@@ -148,12 +148,14 @@ export default function HomePage() {
         <div className="hero-gradient-float glow-drift-cyan absolute left-1/2 top-[-20rem] h-[42rem] w-[42rem] -translate-x-1/2 rounded-full bg-cyan-400/20 blur-3xl" />
         <div className="hero-gradient-float glow-drift-purple absolute left-[18%] top-[8rem] h-[22rem] w-[22rem] rounded-full bg-purple-500/20 blur-3xl" />
         <div className="glow-drift-cyan absolute bottom-[-10rem] right-[-6rem] h-[24rem] w-[24rem] rounded-full bg-cyan-500/10 blur-3xl" />
+        <div className="absolute top-[30%] left-[10%] h-[16rem] w-[16rem] rounded-full bg-cyan-300/5 blur-2xl animate-pulse" />
+        <div className="absolute bottom-[20%] right-[15%] h-[20rem] w-[20rem] rounded-full bg-purple-400/8 blur-2xl animate-pulse" style={{animationDelay: '2s'}} />
       </div>
 
-      <div className="mx-auto max-w-6xl px-5 pb-24 pt-5 sm:px-8 lg:px-10">
-        <header className="navbar-premium reveal-up sticky top-4 z-20 rounded-2xl px-4 py-3.5">
+      <div className="mx-auto max-w-6xl px-5 pb-24 pt-20 sm:px-8 lg:px-10">
+        <header className="navbar-premium reveal-up fixed top-0 left-0 right-0 z-20 rounded-2xl px-6 py-4 backdrop-blur-xl bg-[rgba(10,20,40,0.6)] border border-white/8 shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
           <div className="flex items-center justify-between gap-4">
-            <Link href="/" className="hidden text-2xl font-bold tracking-tight text-white md:block">
+            <Link href="/" className="hidden text-2xl font-extrabold tracking-wider text-white md:block drop-shadow-sm">
               WorkLab
             </Link>
             <nav className="hidden items-center gap-7 text-sm text-slate-300 md:flex">
@@ -197,29 +199,62 @@ export default function HomePage() {
         </header>
 
         <section className="pt-20 text-center sm:pt-24 lg:pt-28">
-          <div className="mx-auto max-w-4xl">
+          <div className="mx-auto max-w-4xl relative">
             <p data-reveal className="scroll-reveal reveal-up mb-6 inline-flex items-center rounded-full border border-white/15 bg-white/5 px-4 py-1 text-sm text-cyan-200">
               {t.landing.badge}
             </p>
-            <p data-reveal className="scroll-reveal reveal-up stagger-1 bg-gradient-to-r from-white via-cyan-100 to-cyan-300 bg-clip-text text-6xl font-bold tracking-tight text-transparent sm:text-7xl md:text-8xl lg:text-9xl">
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="w-96 h-96 rounded-full blur-3xl animate-pulse" style={{background: 'radial-gradient(circle, rgba(120,200,255,0.15) 0%, transparent 60%)'}}></div>
+            </div>
+            <p data-reveal className="scroll-reveal reveal-up stagger-1 bg-gradient-to-r from-white via-cyan-100 to-cyan-300 bg-clip-text text-6xl font-bold tracking-tight text-transparent sm:text-7xl md:text-8xl lg:text-9xl relative z-10">
               WorkLab
             </p>
-            <h1 data-reveal className="scroll-reveal reveal-up stagger-2 mt-6 text-3xl font-semibold leading-tight text-cyan-100 sm:text-4xl lg:text-5xl">
+            <h1 data-reveal className="scroll-reveal reveal-up stagger-2 mt-8 text-3xl font-semibold leading-tight text-cyan-100 sm:text-4xl lg:text-5xl">
               {t.landing.heroTitle}
             </h1>
-            <p data-reveal className="scroll-reveal reveal-up stagger-3 mx-auto mt-6 max-w-3xl text-base leading-8 text-slate-300 sm:text-lg">
+            <p data-reveal className="scroll-reveal reveal-up stagger-3 mx-auto mt-8 max-w-3xl text-base leading-8 text-slate-300 opacity-80 sm:text-lg">
               {t.landing.heroDescription}
             </p>
+            <p className="mt-4 text-center text-sm text-slate-400 opacity-70">
+              Handles thousands of customer conversations automatically
+            </p>
             <div data-reveal className="scroll-reveal reveal-up stagger-4 mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
-              <Link href="/create-employee" className={`${primaryButtonClass} button-glow button-pop w-full sm:w-auto`}>
+              <Link href="/create-employee" className={`${primaryButtonClass} button-glow button-pop w-full sm:w-auto hover:scale-105`}>
                 {t.nav.createAiEmployee}
               </Link>
-              <a href="#demo" className={`${secondaryButtonClass} button-pop w-full sm:w-auto`}>
+              <a href="#demo" className="inline-flex items-center justify-center rounded-xl border border-white/15 bg-white/5 px-7 py-3 text-sm font-semibold text-white/80 transition duration-200 hover:border-cyan-200/40 hover:bg-white/10 w-full sm:w-auto">
                 {t.landing.watchDemo}
               </a>
             </div>
+            <div data-reveal className="scroll-reveal mt-8 text-center text-sm text-slate-400 opacity-70 font-medium tracking-wide">
+              Instant Responses • AI-Powered Intelligence • Global Language Support
+            </div>
+            <div data-reveal className="scroll-reveal mt-6 flex items-center justify-center gap-2 text-sm text-slate-300">
+              <div className="relative">
+                <div className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></div>
+                <div className="absolute inset-0 h-2 w-2 rounded-full bg-emerald-400 opacity-50 animate-ping"></div>
+              </div>
+              <span>AI Employee Online</span>
+            </div>
+            <div data-reveal className="scroll-reveal mt-8 mx-auto max-w-md rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm p-4">
+              <div className="space-y-3">
+                <div className="max-w-[80%] rounded-2xl rounded-bl-md bg-white/10 px-3 py-2 text-sm text-slate-100">
+                  Where is my order #45821?
+                </div>
+                <div className="ml-auto max-w-[80%] rounded-2xl rounded-br-md border border-cyan-300/25 bg-cyan-300/10 px-3 py-2 text-sm text-cyan-100">
+                  Your order is in transit and will arrive tomorrow between 12:00–15:00. Tracking is active.
+                </div>
+                <div className="text-center text-xs text-slate-400">
+                  AI Confidence: 96%
+                </div>
+              </div>
+            </div>
           </div>
         </section>
+
+        <div className="mt-16 flex justify-center">
+          <div className="w-3/5 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-50"></div>
+        </div>
 
         <section id="demo" className="mt-24 sm:mt-32">
           <div className="mx-auto max-w-4xl rounded-3xl border border-white/10 bg-gradient-to-br from-cyan-300/10 via-[#0b1020] to-purple-500/15 p-6 sm:p-10">

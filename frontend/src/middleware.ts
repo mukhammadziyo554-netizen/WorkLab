@@ -16,9 +16,15 @@ function getBackendTarget(): string {
     return stripTrailingSlash(internal);
   }
 
-  const publicUrl = process.env.NEXT_PUBLIC_BACKEND_URL?.trim();
-  if (publicUrl && !isPlaceholderBackendUrl(publicUrl)) {
-    return stripTrailingSlash(publicUrl);
+  // prefer explicit public API env (NEXT_PUBLIC_API_URL)
+  const publicApi = process.env.NEXT_PUBLIC_API_URL?.trim();
+  if (publicApi && !isPlaceholderBackendUrl(publicApi)) {
+    return stripTrailingSlash(publicApi);
+  }
+
+  const legacy = process.env.NEXT_PUBLIC_BACKEND_URL?.trim();
+  if (legacy && !isPlaceholderBackendUrl(legacy)) {
+    return stripTrailingSlash(legacy);
   }
 
   return "http://127.0.0.1:8000";

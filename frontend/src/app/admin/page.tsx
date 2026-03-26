@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, useCallback, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import {
   CartesianGrid,
@@ -101,7 +101,7 @@ export default function AdminPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const loadAdminData = async () => {
+  const loadAdminData = useCallback(async () => {
     const token = window.localStorage.getItem(SESSION_KEY);
     const backendBaseUrl = getBackendBaseUrl();
     if (!token || !backendBaseUrl) {
@@ -155,7 +155,7 @@ export default function AdminPage() {
     } catch {
       setErrorText(t.adminPage.backendUnavailable);
     }
-  };
+  }, [router, t]);
 
   useEffect(() => {
     let mounted = true;
@@ -178,7 +178,7 @@ export default function AdminPage() {
       mounted = false;
       window.clearInterval(intervalId);
     };
-  }, [router]);
+  }, [loadAdminData]);
 
   const toggleFeature = async (featureKey: string, nextValue: boolean) => {
     const token = window.localStorage.getItem(SESSION_KEY);
